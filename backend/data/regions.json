@@ -1,0 +1,50 @@
+[
+  {
+    "id": "ap-south-1",
+    "label": "AWS ap-south-1 (Mumbai)",
+    "lat": 19.08,
+    "lon": 72.88,
+    "approximate": true,
+    "source": "city-level approximation, needs verification."
+  },
+  {
+    "id": "ap-northeast-1",
+    "label": "AWS ap-northeast-1 (Tokyo)",
+    "lat": 35.68,
+    "lon": 139.69,
+    "approximate": true,
+    "source": "city-level approximation, needs verification."
+  },
+  {
+    "id": "ap-southeast-1",
+    "label": "AWS ap-southeast-1 (Singapore)",
+    "lat": 1.35,
+    "lon": 103.82,
+    "approximate": true,
+    "source": "city-level approximation, needs verification."
+  },
+  {
+    "id": "eu-central-1",
+    "label": "AWS eu-central-1 (Frankfurt)",
+    "lat": 50.11,
+    "lon": 8.68,
+    "approximate": true,
+    "source": "city-level approximation, needs verification."
+  },
+  {
+    "id": "us-east-1",
+    "label": "AWS us-east-1 (N. Virginia)",
+    "lat": 38.95,
+    "lon": -77.44,
+    "approximate": true,
+    "source": "city-level approximation, needs verification."
+  },
+  {
+    "id": "us-west-1",
+    "label": "AWS us-west-1 (N. California)",
+    "lat": 37.35,
+    "lon": -121.96,
+    "approximate": true,
+    "source": "city-level approximation, needs verification."
+  }
+]
