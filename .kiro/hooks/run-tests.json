@@ -1,0 +1,16 @@
+{
+  "version": "v1",
+  "hooks": [
+    {
+      "name": "Run pytest on backend file save",
+      "trigger": "PostFileSave",
+      "description": "Runs pytest backend/tests/ automatically whenever a backend Python file is saved",
+      "matcher": "backend/.*\\.py",
+      "action": {
+        "type": "command",
+        "command": "cd /workspaces/failover-radar-v2 && python -m pytest backend/tests/ -q 2>&1 | tail -20",
+        "timeout": 60
+      }
+    }
+  ]
+}
