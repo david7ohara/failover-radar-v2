@@ -1,0 +1,15 @@
+.git
+.gitignore
+.kiro
+backend/tests
+**/__pycache__
+**/*.pyc
+**/*.pyo
+.pytest_cache
+*.md
+!README.md
+PROMPT_*.md
+FIX_*.md
+KIRO_LOG.md
+SETUP_PERMS.md
+pytest.ini
