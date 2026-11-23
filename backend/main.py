@@ -60,8 +60,8 @@ ATTRIBUTION = {
         "url": "https://www.cloudflarestatus.com/api/v2/summary.json",
     },
     "map_tiles": {
-        "name": "CartoDB Dark Matter — © CartoDB, © OpenStreetMap contributors",
-        "url": "https://carto.com/attributions",
+        "name": "© OpenStreetMap contributors",
+        "url": "https://www.openstreetmap.org/copyright",
     },
 }
 

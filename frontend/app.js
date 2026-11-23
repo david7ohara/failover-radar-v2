@@ -19,15 +19,14 @@ let lastData  = null;        // last successful /api/radar payload
 
 // ─── Map initialisation ───────────────────────────────────────────────────────
 
-const map = L.map('map', { zoomControl: true }).setView([20, 20], 2);
+const map = L.map('map', { zoomControl: true, worldCopyJump: false }).setView([20, 10], 1.5);
 
 L.tileLayer(
-  'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png',
+  'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
   {
     attribution:
-      '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap contributors</a> ' +
-      '© <a href="https://carto.com/attributions">CARTO</a>',
-    subdomains: 'abcd',
+      '© <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener noreferrer">OpenStreetMap contributors</a>',
+    noWrap: true,
     maxZoom: 19,
   }
 ).addTo(map);
@@ -103,15 +102,16 @@ function statusLabel(status) {
  * Size scales with magnitude; colour distinguishes simulated vs live.
  */
 function buildQuakeMarker(quake) {
-  const radius  = Math.max(4, quake.magnitude * 3);
+  const radius  = 6;
   const color   = quake.simulated ? '#a78bfa' : '#f97316';
 
   const marker = L.circleMarker([quake.lat, quake.lon], {
     radius,
     color,
     fillColor: color,
-    fillOpacity: 0.5,
-    weight: 1.5,
+    fillOpacity: 0.85,
+    weight: 2,
+    className: 'quake-marker',
   });
 
   // Popup — all text via textContent nodes to avoid innerHTML injection

@@ -136,6 +136,11 @@ h1 {
   overflow: hidden;
 }
 
+/* ── Leaflet tile pane — dark-cyan NOC radar filter ────────────────────── */
+.leaflet-tile-pane {
+  filter: invert(100%) hue-rotate(195deg) brightness(88%) contrast(115%) saturate(130%);
+}
+
 /* ── Map pane ──────────────────────────────────────────────────────────── */
 .map-pane {
   position: relative;
@@ -290,12 +295,12 @@ h1 {
 @media (max-width: 767px) {
   .app-main {
     grid-template-columns: 1fr;
-    grid-template-rows: 50dvh 1fr;
+    grid-template-rows: 62vh 1fr;
     overflow: visible;
   }
 
   .map-pane {
-    height: 50dvh;
+    height: 62vh;
   }
 
   .sidebar {
@@ -308,4 +313,37 @@ h1 {
   h1 { font-size: 15px; }
   .radar-icon { font-size: 17px; }
   .btn { padding: 0 14px; font-size: 13px; }
+}
+
+/* ── Compact HUD <details> panels ──────────────────────────────────────── */
+.panel-summary {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+  list-style: none;
+  user-select: none;
+}
+
+/* Remove default marker in WebKit */
+.panel-summary::-webkit-details-marker { display: none; }
+
+.panel-details-toggle {
+  margin-left: auto;
+  font-size: 11px;
+  color: var(--text-muted);
+  transition: transform 0.15s;
+}
+
+details[open] .panel-details-toggle {
+  transform: rotate(90deg);
+}
+
+.panel-details-body {
+  margin-top: 6px;
+}
+
+/* Quake marker glow */
+.quake-marker {
+  filter: drop-shadow(0 0 4px currentColor);
 }

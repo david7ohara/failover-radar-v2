@@ -363,7 +363,7 @@ def test_attribution_urls(client):
     assert "earthquake.usgs.gov" in attribution["usgs"]["url"]
     assert "githubstatus.com" in attribution["github_status"]["url"]
     assert "cloudflarestatus.com" in attribution["cloudflare_status"]["url"]
-    assert "carto.com" in attribution["map_tiles"]["url"]
+    assert "openstreetmap.org" in attribution["map_tiles"]["url"]
 
 
 # ===========================================================================
@@ -408,7 +408,6 @@ def test_attribution_display_names(client):
     assert "USGS" in attribution["usgs"]["name"]
     assert "GitHub" in attribution["github_status"]["name"]
     assert "Cloudflare" in attribution["cloudflare_status"]["name"]
-    # CartoDB tile attribution must name both CartoDB and OpenStreetMap
+    # OSM tile attribution must name OpenStreetMap
     map_tile_name = attribution["map_tiles"]["name"]
-    assert "CartoDB" in map_tile_name
     assert "OpenStreetMap" in map_tile_name

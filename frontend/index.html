@@ -56,42 +56,57 @@
 
       <!-- USGS quake feed status -->
       <section class="panel" id="panel-usgs" aria-label="USGS feed status">
-        <div class="panel-header">
-          <span class="panel-source">USGS Earthquakes</span>
-          <span class="stale-badge" id="stale-usgs" hidden>STALE</span>
-        </div>
-        <p class="panel-meta">
-          Last updated: <span id="usgs-last-updated">—</span>
-        </p>
-        <p class="panel-detail" id="usgs-count">—</p>
+        <details open>
+          <summary class="panel-summary">
+            <span class="panel-source">USGS Earthquakes</span>
+            <span class="stale-badge" id="stale-usgs" hidden>STALE</span>
+            <span class="panel-details-toggle" aria-hidden="true">▶</span>
+          </summary>
+          <div class="panel-details-body">
+            <p class="panel-meta">
+              Last updated: <span id="usgs-last-updated">—</span>
+            </p>
+            <p class="panel-detail" id="usgs-count">—</p>
+          </div>
+        </details>
       </section>
 
       <!-- GitHub status -->
       <section class="panel" id="panel-github" aria-label="GitHub status">
-        <div class="panel-header">
-          <span class="panel-source" id="github-source">GitHub</span>
-          <span class="stale-badge" id="stale-github" hidden>STALE</span>
-        </div>
-        <p class="panel-meta">
-          Last updated: <span id="github-last-updated">—</span>
-        </p>
-        <p class="panel-detail" id="github-description">—</p>
-        <ul class="component-list" id="github-components"></ul>
-        <ul class="incident-list" id="github-incidents"></ul>
+        <details open>
+          <summary class="panel-summary">
+            <span class="panel-source" id="github-source">GitHub</span>
+            <span class="stale-badge" id="stale-github" hidden>STALE</span>
+            <span class="panel-details-toggle" aria-hidden="true">▶</span>
+          </summary>
+          <div class="panel-details-body">
+            <p class="panel-meta">
+              Last updated: <span id="github-last-updated">—</span>
+            </p>
+            <p class="panel-detail" id="github-description">—</p>
+            <ul class="component-list" id="github-components"></ul>
+            <ul class="incident-list" id="github-incidents"></ul>
+          </div>
+        </details>
       </section>
 
       <!-- Cloudflare status -->
       <section class="panel" id="panel-cloudflare" aria-label="Cloudflare status">
-        <div class="panel-header">
-          <span class="panel-source" id="cloudflare-source">Cloudflare</span>
-          <span class="stale-badge" id="stale-cloudflare" hidden>STALE</span>
-        </div>
-        <p class="panel-meta">
-          Last updated: <span id="cloudflare-last-updated">—</span>
-        </p>
-        <p class="panel-detail" id="cloudflare-description">—</p>
-        <ul class="component-list" id="cloudflare-components"></ul>
-        <ul class="incident-list" id="cloudflare-incidents"></ul>
+        <details open>
+          <summary class="panel-summary">
+            <span class="panel-source" id="cloudflare-source">Cloudflare</span>
+            <span class="stale-badge" id="stale-cloudflare" hidden>STALE</span>
+            <span class="panel-details-toggle" aria-hidden="true">▶</span>
+          </summary>
+          <div class="panel-details-body">
+            <p class="panel-meta">
+              Last updated: <span id="cloudflare-last-updated">—</span>
+            </p>
+            <p class="panel-detail" id="cloudflare-description">—</p>
+            <ul class="component-list" id="cloudflare-components"></ul>
+            <ul class="incident-list" id="cloudflare-incidents"></ul>
+          </div>
+        </details>
       </section>
 
       <!-- Attribution -->
@@ -102,9 +117,8 @@
              target="_blank" rel="noopener noreferrer">USGS Earthquake Hazards Program</a>
         </p>
         <p class="attribution-text">
-          Map tiles: © <a href="https://carto.com/attributions"
-             target="_blank" rel="noopener noreferrer">CARTO</a>
-          © <a href="https://www.openstreetmap.org/copyright"
+          Map tiles: ©
+          <a href="https://www.openstreetmap.org/copyright"
              target="_blank" rel="noopener noreferrer">OpenStreetMap contributors</a>
         </p>
       </section>
