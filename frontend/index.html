@@ -2,27 +2,116 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Failover Radar</title>
-  <style>
-    body {
-      margin: 0;
-      background: #0b0f17;
-      color: #e2e8f0;
-      font-family: system-ui, sans-serif;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      min-height: 100vh;
-    }
-    h1 { color: #10b981; }
-    p  { color: #94a3b8; }
-  </style>
+
+  <!-- Leaflet 1.9.4 — pinned, no SRI -->
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+
+  <link rel="stylesheet" href="/styles.css" />
 </head>
 <body>
-  <div>
-    <h1>Failover Radar</h1>
-    <p>Map coming in T6.</p>
+
+  <!-- ═══════════════════════════════════════════════════════════════════
+       SIMULATION BANNER  (hidden by default)
+  ═══════════════════════════════════════════════════════════════════ -->
+  <div id="sim-banner" class="sim-banner" hidden>
+    <span id="sim-banner-text">SIMULATION: Tokyo M6.8 — demo stress test active</span>
   </div>
+
+  <!-- ═══════════════════════════════════════════════════════════════════
+       HEADER
+  ═══════════════════════════════════════════════════════════════════ -->
+  <header class="app-header">
+    <div class="header-title">
+      <span class="radar-icon" aria-hidden="true">📡</span>
+      <h1>Failover Radar</h1>
+    </div>
+    <div class="header-controls">
+      <button id="btn-simulate" class="btn btn-warn" type="button">Simulate</button>
+      <button id="btn-clear"    class="btn btn-clear" type="button" hidden>Clear</button>
+    </div>
+  </header>
+
+  <!-- ═══════════════════════════════════════════════════════════════════
+       UPDATE-FAILED NOTICE  (hidden by default)
+  ═══════════════════════════════════════════════════════════════════ -->
+  <div id="update-error" class="update-error" hidden>
+    <span id="update-error-text">Update failed, showing last data.</span>
+  </div>
+
+  <!-- ═══════════════════════════════════════════════════════════════════
+       MAIN LAYOUT
+  ═══════════════════════════════════════════════════════════════════ -->
+  <main class="app-main">
+
+    <!-- Map pane -->
+    <section class="map-pane" aria-label="Seismic and region map">
+      <div id="map"></div>
+    </section>
+
+    <!-- Sidebar: provider panels -->
+    <aside class="sidebar">
+
+      <!-- USGS quake feed status -->
+      <section class="panel" id="panel-usgs" aria-label="USGS feed status">
+        <div class="panel-header">
+          <span class="panel-source">USGS Earthquakes</span>
+          <span class="stale-badge" id="stale-usgs" hidden>STALE</span>
+        </div>
+        <p class="panel-meta">
+          Last updated: <span id="usgs-last-updated">—</span>
+        </p>
+        <p class="panel-detail" id="usgs-count">—</p>
+      </section>
+
+      <!-- GitHub status -->
+      <section class="panel" id="panel-github" aria-label="GitHub status">
+        <div class="panel-header">
+          <span class="panel-source" id="github-source">GitHub</span>
+          <span class="stale-badge" id="stale-github" hidden>STALE</span>
+        </div>
+        <p class="panel-meta">
+          Last updated: <span id="github-last-updated">—</span>
+        </p>
+        <p class="panel-detail" id="github-description">—</p>
+        <ul class="component-list" id="github-components"></ul>
+        <ul class="incident-list" id="github-incidents"></ul>
+      </section>
+
+      <!-- Cloudflare status -->
+      <section class="panel" id="panel-cloudflare" aria-label="Cloudflare status">
+        <div class="panel-header">
+          <span class="panel-source" id="cloudflare-source">Cloudflare</span>
+          <span class="stale-badge" id="stale-cloudflare" hidden>STALE</span>
+        </div>
+        <p class="panel-meta">
+          Last updated: <span id="cloudflare-last-updated">—</span>
+        </p>
+        <p class="panel-detail" id="cloudflare-description">—</p>
+        <ul class="component-list" id="cloudflare-components"></ul>
+        <ul class="incident-list" id="cloudflare-incidents"></ul>
+      </section>
+
+      <!-- Attribution -->
+      <section class="panel panel-attribution" aria-label="Data attribution">
+        <p class="attribution-text">
+          Seismic data:
+          <a href="https://earthquake.usgs.gov/earthquakes/feed/v1.0/summary/4.5_day.geojson"
+             target="_blank" rel="noopener noreferrer">USGS Earthquake Hazards Program</a>
+        </p>
+        <p class="attribution-text">
+          Map tiles: © <a href="https://carto.com/attributions"
+             target="_blank" rel="noopener noreferrer">CARTO</a>
+          © <a href="https://www.openstreetmap.org/copyright"
+             target="_blank" rel="noopener noreferrer">OpenStreetMap contributors</a>
+        </p>
+      </section>
+
+    </aside>
+  </main>
+
+  <script src="/app.js"></script>
 </body>
 </html>

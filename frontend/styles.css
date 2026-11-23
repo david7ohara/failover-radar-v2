@@ -1,0 +1,311 @@
+/* ═══════════════════════════════════════════════════════════════════════
+   Failover Radar — dark-mode stylesheet
+   ═══════════════════════════════════════════════════════════════════════ */
+
+/* ── Design tokens ─────────────────────────────────────────────────────── */
+:root {
+  --bg:           #0b0f17;
+  --bg-panel:     #111827;
+  --bg-header:    #0d1424;
+  --border:       #1f2a3c;
+  --text:         #e2e8f0;
+  --text-muted:   #94a3b8;
+  --nearby:       #ef4444;
+  --nearby-bg:    rgba(239, 68, 68, 0.12);
+  --clear:        #10b981;
+  --warn:         #f59e0b;
+  --sim-banner:   #7c3aed;
+  --sim-text:     #ede9fe;
+  --stale-bg:     #78350f;
+  --stale-text:   #fde68a;
+  --radius:       6px;
+  --tap:          44px;
+}
+
+/* ── Reset & base ──────────────────────────────────────────────────────── */
+*, *::before, *::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html, body {
+  height: 100%;
+  overflow-x: hidden;
+}
+
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: system-ui, -apple-system, sans-serif;
+  font-size: 14px;
+  line-height: 1.5;
+  min-height: 100dvh;
+  display: flex;
+  flex-direction: column;
+}
+
+a {
+  color: #60a5fa;
+  text-underline-offset: 2px;
+}
+a:hover { color: #93c5fd; }
+
+/* ── Simulation banner ─────────────────────────────────────────────────── */
+.sim-banner {
+  background: var(--sim-banner);
+  color: var(--sim-text);
+  font-weight: 700;
+  font-size: 13px;
+  letter-spacing: 0.04em;
+  text-align: center;
+  padding: 8px 16px;
+  flex-shrink: 0;
+}
+
+/* ── Header ────────────────────────────────────────────────────────────── */
+.app-header {
+  background: var(--bg-header);
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 16px;
+  height: 56px;
+  flex-shrink: 0;
+}
+
+.header-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.radar-icon { font-size: 20px; }
+
+h1 {
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--clear);
+  white-space: nowrap;
+}
+
+.header-controls {
+  display: flex;
+  gap: 8px;
+}
+
+/* ── Buttons ───────────────────────────────────────────────────────────── */
+.btn {
+  min-height: var(--tap);
+  min-width: var(--tap);
+  padding: 0 18px;
+  border: none;
+  border-radius: var(--radius);
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: opacity 0.15s;
+}
+.btn:hover  { opacity: 0.85; }
+.btn:active { opacity: 0.7; }
+
+.btn-warn  { background: var(--nearby); color: #fff; }
+.btn-clear { background: var(--clear);  color: #0b0f17; }
+
+/* ── Update-failed notice ─────────────────────────────────────────────��── */
+.update-error {
+  background: #1a1206;
+  border-bottom: 1px solid var(--warn);
+  color: var(--warn);
+  font-size: 13px;
+  text-align: center;
+  padding: 6px 16px;
+  flex-shrink: 0;
+}
+
+/* ── Main layout ───────────────────────────────────────────────────────── */
+.app-main {
+  flex: 1;
+  display: grid;
+  /* Desktop: map 60%, sidebar 40% */
+  grid-template-columns: 60fr 40fr;
+  grid-template-rows: 1fr;
+  min-height: 0;
+  overflow: hidden;
+}
+
+/* ── Map pane ──────────────────────────────────────────────────────────── */
+.map-pane {
+  position: relative;
+  min-height: 0;
+}
+
+#map {
+  width: 100%;
+  height: 100%;
+  background: #0b0f17;
+}
+
+/* ── Sidebar ───────────────────────────────────────────────────────────── */
+.sidebar {
+  overflow-y: auto;
+  overflow-x: hidden;
+  border-left: 1px solid var(--border);
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  background: var(--border);
+}
+
+/* ── Panel ─────────────────────────────────────────────────────────────── */
+.panel {
+  background: var(--bg-panel);
+  padding: 14px 16px;
+}
+
+.panel-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 4px;
+}
+
+.panel-source {
+  font-weight: 700;
+  font-size: 13px;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+  color: var(--text);
+}
+
+.panel-meta {
+  font-size: 12px;
+  color: var(--text-muted);
+  margin-bottom: 6px;
+}
+
+.panel-detail {
+  font-size: 13px;
+  color: var(--text);
+}
+
+/* ── Stale badge ───────────────────────────────────────────────────────── */
+.stale-badge {
+  background: var(--stale-bg);
+  color: var(--stale-text);
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  padding: 2px 6px;
+  border-radius: 3px;
+  flex-shrink: 0;
+}
+
+/* ── Component list ────────────────────────────────────────────────────── */
+.component-list,
+.incident-list {
+  list-style: none;
+  margin-top: 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.component-list:empty,
+.incident-list:empty { display: none; }
+
+.component-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 12px;
+  gap: 8px;
+}
+
+.component-name  { color: var(--text-muted); }
+.component-status-operational         { color: var(--clear); }
+.component-status-degraded_performance { color: var(--warn); }
+.component-status-partial_outage      { color: var(--warn); }
+.component-status-major_outage        { color: var(--nearby); }
+.component-status-unknown             { color: var(--text-muted); }
+
+.incident-item {
+  font-size: 12px;
+  color: var(--nearby);
+}
+.incident-item a { color: var(--nearby); }
+
+/* ── Attribution panel ─────────────────────────────────────────────────── */
+.panel-attribution {
+  margin-top: auto;
+}
+
+.attribution-text {
+  font-size: 11px;
+  color: var(--text-muted);
+  margin-bottom: 4px;
+}
+.attribution-text:last-child { margin-bottom: 0; }
+
+/* ── Leaflet popup overrides ───────────────────────────────────────────── */
+.leaflet-popup-content-wrapper {
+  background: #1e293b;
+  color: var(--text);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  box-shadow: 0 4px 16px rgba(0,0,0,0.6);
+}
+.leaflet-popup-tip { background: #1e293b; }
+.leaflet-popup-content { margin: 10px 14px; font-size: 13px; }
+.leaflet-popup-content p { margin: 3px 0; }
+.popup-place    { font-weight: 700; color: var(--text); }
+.popup-mag      { color: var(--warn); }
+.popup-time     { color: var(--text-muted); font-size: 11px; }
+.popup-link a   { color: #60a5fa; }
+.popup-sim-tag  { color: var(--sim-text); font-size: 11px; font-style: italic; }
+
+/* ── Leaflet tooltip overrides ─────────────────────────────────────────── */
+.leaflet-tooltip {
+  background: #1e293b;
+  color: var(--text-muted);
+  border: 1px solid var(--border);
+  font-size: 11px;
+  padding: 3px 7px;
+}
+
+/* ── Pulse animation (opacity + stroke only, no transform) ─────────────── */
+@keyframes pulse-ring {
+  0%   { opacity: 0.7; stroke-opacity: 0.7; }
+  50%  { opacity: 0.25; stroke-opacity: 0.25; }
+  100% { opacity: 0.7; stroke-opacity: 0.7; }
+}
+
+.pulse-ring path {
+  animation: pulse-ring 2s ease-in-out infinite;
+}
+
+/* ── Responsive: mobile (≤ 767px) ──────────────────────────────────────── */
+@media (max-width: 767px) {
+  .app-main {
+    grid-template-columns: 1fr;
+    grid-template-rows: 50dvh 1fr;
+    overflow: visible;
+  }
+
+  .map-pane {
+    height: 50dvh;
+  }
+
+  .sidebar {
+    border-left: none;
+    border-top: 1px solid var(--border);
+    overflow-y: auto;
+    max-height: none;
+  }
+
+  h1 { font-size: 15px; }
+  .radar-icon { font-size: 17px; }
+  .btn { padding: 0 14px; font-size: 13px; }
+}

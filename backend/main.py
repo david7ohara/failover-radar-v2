@@ -21,6 +21,7 @@ from fastapi.staticfiles import StaticFiles
 from backend.feeds import fetch_cloudflare_status, fetch_github_status, fetch_usgs
 from backend.geo import (
     CLEAR_LABEL,
+    DEFAULT_THRESHOLD_KM,
     NEARBY_LABEL,
     REGIONS,
     classify_proximity,
@@ -186,6 +187,7 @@ async def radar(
         "generated_at_utc": datetime.now(tz=timezone.utc)
         .isoformat(timespec="milliseconds")
         .replace("+00:00", "Z"),
+        "threshold_km": DEFAULT_THRESHOLD_KM,
         "quakes": {
             "live_count": live_count,
             "stale": usgs_data["stale"],

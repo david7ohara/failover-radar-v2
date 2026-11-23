@@ -364,3 +364,51 @@ def test_attribution_urls(client):
     assert "githubstatus.com" in attribution["github_status"]["url"]
     assert "cloudflarestatus.com" in attribution["cloudflare_status"]["url"]
     assert "carto.com" in attribution["map_tiles"]["url"]
+
+
+# ===========================================================================
+# T6-1: threshold_km is present in /api/radar and equals exactly 300.0
+# ===========================================================================
+
+def test_threshold_km_field(client):
+    with (
+        patch("backend.main.fetch_usgs", new=AsyncMock(return_value=_usgs_result([]))),
+        patch("backend.main.fetch_github_status", new=AsyncMock(return_value=_sp_result("GitHub"))),
+        patch("backend.main.fetch_cloudflare_status", new=AsyncMock(return_value=_sp_result("Cloudflare"))),
+    ):
+        r = client.get("/api/radar")
+
+    body = r.json()
+    assert "threshold_km" in body, "threshold_km must be a top-level field in /api/radar"
+    assert body["threshold_km"] == 300.0
+
+
+# ===========================================================================
+# T6-2: Static files — GET / returns HTTP 200 (frontend is mounted)
+# ===========================================================================
+
+def test_static_root_returns_200(client):
+    r = client.get("/")
+    assert r.status_code == 200
+
+
+# ===========================================================================
+# T6-3: Attribution strings — required display names are present
+# ===========================================================================
+
+def test_attribution_display_names(client):
+    with (
+        patch("backend.main.fetch_usgs", new=AsyncMock(return_value=_usgs_result([]))),
+        patch("backend.main.fetch_github_status", new=AsyncMock(return_value=_sp_result("GitHub"))),
+        patch("backend.main.fetch_cloudflare_status", new=AsyncMock(return_value=_sp_result("Cloudflare"))),
+    ):
+        r = client.get("/api/radar")
+
+    attribution = r.json()["attribution"]
+    assert "USGS" in attribution["usgs"]["name"]
+    assert "GitHub" in attribution["github_status"]["name"]
+    assert "Cloudflare" in attribution["cloudflare_status"]["name"]
+    # CartoDB tile attribution must name both CartoDB and OpenStreetMap
+    map_tile_name = attribution["map_tiles"]["name"]
+    assert "CartoDB" in map_tile_name
+    assert "OpenStreetMap" in map_tile_name
