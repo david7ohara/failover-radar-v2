@@ -347,3 +347,219 @@ details[open] .panel-details-toggle {
 .quake-marker {
   filter: drop-shadow(0 0 4px currentColor);
 }
+
+/* ── My Stack button ───────────────────────────────────────────────────── */
+.btn-stack {
+  background: #1e3a5f;
+  color: #93c5fd;
+  border: 1px solid #2563eb44;
+}
+.btn-stack:hover { background: #1e40af; color: #bfdbfe; }
+.btn-stack[aria-expanded="true"] {
+  background: #1d4ed8;
+  color: #fff;
+}
+
+/* ── My Stack drawer ───────────────────────────────────────────────────── */
+.mystack-drawer {
+  position: fixed;
+  top: 56px;           /* below header */
+  right: 0;
+  width: 380px;
+  max-width: 100vw;
+  max-height: calc(100dvh - 56px);
+  overflow-y: auto;
+  background: var(--bg-panel);
+  border-left: 1px solid var(--border);
+  border-bottom: 1px solid var(--border);
+  z-index: 500;
+  box-shadow: -4px 4px 24px rgba(0, 0, 0, 0.5);
+}
+
+.mystack-drawer-inner {
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.mystack-drawer-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.mystack-drawer-title {
+  font-weight: 700;
+  font-size: 13px;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+  color: var(--text);
+}
+
+.mystack-close-btn {
+  background: transparent;
+  color: var(--text-muted);
+  border: 1px solid var(--border);
+  min-height: var(--tap);
+  min-width: var(--tap);
+  font-size: 16px;
+}
+.mystack-close-btn:hover { color: var(--text); border-color: var(--text-muted); }
+
+.btn-ghost {
+  background: transparent;
+}
+
+/* ── My Stack scrim ────────────────────────────────────────────────────── */
+.mystack-scrim {
+  display: none;         /* only shown via JS on mobile */
+}
+
+/* ── My Stack hint ─────────────────────────────────────────────────────── */
+.mystack-hint {
+  font-size: 12px;
+  color: var(--text-muted);
+  line-height: 1.5;
+}
+
+/* ── My Stack columns ──────────────────────────────────────────────────── */
+.mystack-columns {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+
+/* ── My Stack fieldsets ────────────────────────────────────────────────── */
+.mystack-fieldset {
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 8px 10px 10px;
+}
+
+.mystack-legend {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  padding: 0 4px;
+}
+
+.mystack-checklist {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  margin-top: 6px;
+}
+
+/* ── My Stack labels (44 px tap targets) ────────────────────────────────── */
+.mystack-label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  color: var(--text);
+  cursor: pointer;
+  min-height: var(--tap);    /* 44 px */
+  padding: 0 4px;
+  border-radius: var(--radius);
+  transition: color 0.1s, opacity 0.1s;
+}
+.mystack-label:hover { color: #fff; }
+
+/* Dimmed = unselected */
+.mystack-label--dim {
+  opacity: 0.35;
+  color: var(--text-muted);
+}
+.mystack-label--dim:hover { opacity: 0.6; }
+
+.mystack-cb {
+  width: 18px;
+  height: 18px;
+  accent-color: var(--clear);
+  cursor: pointer;
+  flex-shrink: 0;
+}
+
+.mystack-loading {
+  font-size: 12px;
+  color: var(--text-muted);
+  padding: 8px 4px;
+}
+
+/* ── My Stack summary banner ───────────────────────────────────────────── */
+.mystack-banner {
+  background: #0d1a2a;
+  border-left: 3px solid var(--clear);
+  color: var(--text);
+  font-size: 12px;
+  padding: 8px 12px;
+  border-radius: 0 var(--radius) var(--radius) 0;
+  line-height: 1.6;
+}
+
+.mystack-banner--nearby {
+  border-left-color: var(--nearby);
+  background: var(--nearby-bg);
+}
+
+.mystack-banner--sim {
+  border-left-color: var(--sim-banner);
+  background: rgba(124, 58, 237, 0.12);
+}
+
+/* ── My Stack nearby advice ────────────────────────────────────────────── */
+.mystack-advice {
+  background: rgba(239, 68, 68, 0.06);
+  border: 1px solid rgba(239, 68, 68, 0.25);
+  border-radius: var(--radius);
+  padding: 8px 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.mystack-advice-item {
+  font-size: 12px;
+  color: var(--text);
+  line-height: 1.5;
+}
+
+.advice-region {
+  font-weight: 700;
+  color: var(--nearby);
+}
+
+.advice-alt {
+  color: var(--text-muted);
+  font-style: italic;
+}
+
+/* ── Mobile My Stack: bottom sheet ─────────────────────────────────────── */
+@media (max-width: 767px) {
+  .mystack-drawer {
+    top: auto;
+    bottom: 0;
+    right: 0;
+    left: 0;
+    width: 100%;
+    max-height: 72dvh;
+    border-left: none;
+    border-top: 1px solid var(--border);
+    border-radius: 12px 12px 0 0;
+  }
+
+  .mystack-scrim {
+    display: block;
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.55);
+    z-index: 499;
+  }
+
+  .mystack-columns {
+    grid-template-columns: 1fr;
+  }
+}

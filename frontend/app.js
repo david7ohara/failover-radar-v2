@@ -7,15 +7,20 @@
  *   - All URLs are relative (/api/radar).
  *   - Radius of proximity circles comes from threshold_km in the API response.
  *   - "nearby" phrasing only — never "affected".
- *   - No localStorage.
+ *   - My Stack selection is never sent to the server; it filters display only.
+ *   - Pure My Stack logic lives in stack.js (window.MyStack).
  */
 
 'use strict';
 
 // ─── State ────────────────────────────────────────────────────────────────────
 
-let simulate = false;
-let lastData  = null;        // last successful /api/radar payload
+let simulate  = false;
+let lastData  = null;   // last successful /api/radar payload
+
+// stackState is populated by initMyStack() after the first fetch.
+// Shape: { regions: Set<string>, providers: Set<string>, persisted: boolean }
+let stackState = null;
 
 // ─── Map initialisation ───────────────────────────────────────────────────────
 
@@ -39,52 +44,54 @@ const lineLayer   = L.layerGroup().addTo(map);
 
 // ─── DOM references ───────────────────────────────────────────────────────────
 
-const simBanner      = document.getElementById('sim-banner');
-const simBannerText  = document.getElementById('sim-banner-text');
-const btnSimulate    = document.getElementById('btn-simulate');
-const btnClear       = document.getElementById('btn-clear');
-const updateError    = document.getElementById('update-error');
+const simBanner    = document.getElementById('sim-banner');
+const btnSimulate  = document.getElementById('btn-simulate');
+const btnClear     = document.getElementById('btn-clear');
+const updateError  = document.getElementById('update-error');
+
+// My Stack drawer
+const drawer        = document.getElementById('mystack-drawer');
+const scrim         = document.getElementById('mystack-scrim');
+const btnMyStack    = document.getElementById('btn-mystack');
+const btnClose      = document.getElementById('btn-mystack-close');
+const regionList    = document.getElementById('mystack-region-list');
+const providerList  = document.getElementById('mystack-provider-list');
+const mystackBanner = document.getElementById('mystack-banner');
+const mystackAdvice = document.getElementById('mystack-advice');
 
 // USGS panel
-const staleUsgs         = document.getElementById('stale-usgs');
-const usgsLastUpdated   = document.getElementById('usgs-last-updated');
-const usgsCount         = document.getElementById('usgs-count');
+const staleUsgs       = document.getElementById('stale-usgs');
+const usgsLastUpdated = document.getElementById('usgs-last-updated');
+const usgsCount       = document.getElementById('usgs-count');
 
 // GitHub panel
-const staleGithub         = document.getElementById('stale-github');
-const githubSource        = document.getElementById('github-source');
-const githubLastUpdated   = document.getElementById('github-last-updated');
-const githubDescription   = document.getElementById('github-description');
-const githubComponents    = document.getElementById('github-components');
-const githubIncidents     = document.getElementById('github-incidents');
+const staleGithub       = document.getElementById('stale-github');
+const githubSource      = document.getElementById('github-source');
+const githubLastUpdated = document.getElementById('github-last-updated');
+const githubDescription = document.getElementById('github-description');
+const githubComponents  = document.getElementById('github-components');
+const githubIncidents   = document.getElementById('github-incidents');
 
 // Cloudflare panel
-const staleCloudflare         = document.getElementById('stale-cloudflare');
-const cloudflareSource        = document.getElementById('cloudflare-source');
-const cloudflareLastUpdated   = document.getElementById('cloudflare-last-updated');
-const cloudflareDescription   = document.getElementById('cloudflare-description');
-const cloudflareComponents    = document.getElementById('cloudflare-components');
-const cloudflareIncidents     = document.getElementById('cloudflare-incidents');
+const staleCloudflare       = document.getElementById('stale-cloudflare');
+const cloudflareSource      = document.getElementById('cloudflare-source');
+const cloudflareLastUpdated = document.getElementById('cloudflare-last-updated');
+const cloudflareDescription = document.getElementById('cloudflare-description');
+const cloudflareComponents  = document.getElementById('cloudflare-components');
+const cloudflareIncidents   = document.getElementById('cloudflare-incidents');
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
-/** Format an ISO 8601 UTC string for display, or return fallback. */
 function fmtUtc(isoStr) {
   if (!isoStr) return 'unknown';
-  try {
-    return new Date(isoStr).toUTCString();
-  } catch (_) {
-    return isoStr;
-  }
+  try { return new Date(isoStr).toUTCString(); } catch (_) { return isoStr; }
 }
 
-/** Map a Statuspage component status key to a CSS class suffix. */
 function statusClass(status) {
   const known = ['operational', 'degraded_performance', 'partial_outage', 'major_outage'];
   return known.includes(status) ? status : 'unknown';
 }
 
-/** Map a Statuspage component status key to a human label. */
 function statusLabel(status) {
   const labels = {
     operational:          'Operational',
@@ -95,18 +102,240 @@ function statusLabel(status) {
   return labels[status] ?? status;
 }
 
-// ─── Map rendering ────────────────────────────────────────────────────────────
+function setText(el, text) {
+  el.textContent = text;
+}
+
+// ─── My Stack drawer ──────────────────────────────────────────────────────────
+
+function openDrawer() {
+  drawer.hidden = false;
+  scrim.hidden  = false;
+  btnMyStack.setAttribute('aria-expanded', 'true');
+}
+
+function closeDrawer() {
+  drawer.hidden = true;
+  scrim.hidden  = true;
+  btnMyStack.setAttribute('aria-expanded', 'false');
+}
+
+btnMyStack.addEventListener('click', () => {
+  drawer.hidden ? openDrawer() : closeDrawer();
+});
+btnClose.addEventListener('click', closeDrawer);
+scrim.addEventListener('click', closeDrawer);
+
+// ─── My Stack initialisation ──────────────────────────────────────────────────
 
 /**
- * Build a Leaflet circle marker for a quake.
- * Size scales with magnitude; colour distinguishes simulated vs live.
+ * Build checkboxes for regions and providers.
+ * Called once after the first successful /api/radar fetch.
+ * Idempotent — the data-built guard prevents rebuilding on subsequent polls.
  */
+function initMyStack(data) {
+  const knownRegionIds   = data.regions.map(r => r.id);
+  const knownProviderIds = (data.providers || []).map(p => p.provider);
+
+  // Load persisted state (or defaults) from stack.js
+  stackState = MyStack.load(knownRegionIds, knownProviderIds);
+
+  // ── Region checkboxes ────────────────────────────────────────────────────
+  if (regionList.dataset.built !== 'true') {
+    while (regionList.firstChild) regionList.removeChild(regionList.firstChild);
+
+    for (const region of data.regions) {
+      const label = document.createElement('label');
+      label.className = 'mystack-label';
+      label.dataset.regionId = region.id;
+
+      const cb = document.createElement('input');
+      cb.type      = 'checkbox';
+      cb.className = 'mystack-cb';
+      cb.dataset.kind = 'region';
+      cb.dataset.id   = region.id;
+      cb.checked = stackState.regions.has(region.id);
+
+      cb.addEventListener('change', () => {
+        if (cb.checked) {
+          stackState.regions.add(region.id);
+        } else {
+          stackState.regions.delete(region.id);
+        }
+        const saved = MyStack.save(stackState);
+        if (saved) stackState.persisted = true;
+        applyMyStack(lastData);
+      });
+
+      const text = document.createTextNode(region.label + '\u00a0(' + region.id + ')');
+      label.appendChild(cb);
+      label.appendChild(text);
+      regionList.appendChild(label);
+    }
+
+    regionList.dataset.built = 'true';
+  }
+
+  // ── Provider checkboxes ──────────────────────────────────────────────────
+  if (providerList.dataset.built !== 'true') {
+    while (providerList.firstChild) providerList.removeChild(providerList.firstChild);
+
+    for (const provider of (data.providers || [])) {
+      const name = provider.provider;
+
+      const label = document.createElement('label');
+      label.className = 'mystack-label';
+      label.dataset.providerId = name;
+
+      const cb = document.createElement('input');
+      cb.type      = 'checkbox';
+      cb.className = 'mystack-cb';
+      cb.dataset.kind = 'provider';
+      cb.dataset.id   = name;
+      cb.checked = stackState.providers.has(name);
+
+      cb.addEventListener('change', () => {
+        if (cb.checked) {
+          stackState.providers.add(name);
+        } else {
+          stackState.providers.delete(name);
+        }
+        const saved = MyStack.save(stackState);
+        if (saved) stackState.persisted = true;
+        applyMyStack(lastData);
+      });
+
+      const text = document.createTextNode(name);
+      label.appendChild(cb);
+      label.appendChild(text);
+      providerList.appendChild(label);
+    }
+
+    providerList.dataset.built = 'true';
+  }
+}
+
+// ─── My Stack rendering ───────────────────────────────────────────────────────
+
+/**
+ * Dim unselected region/provider rows; bring selected ones to full opacity.
+ * Selected items appear first within each fieldset.
+ */
+function applyCheckboxDimming() {
+  if (!stackState) return;
+
+  // Region labels
+  regionList.querySelectorAll('label[data-region-id]').forEach(label => {
+    const id       = label.dataset.regionId;
+    const selected = stackState.regions.has(id);
+    label.classList.toggle('mystack-label--dim', !selected);
+  });
+
+  // Provider labels
+  providerList.querySelectorAll('label[data-provider-id]').forEach(label => {
+    const id       = label.dataset.providerId;
+    const selected = stackState.providers.has(id);
+    label.classList.toggle('mystack-label--dim', !selected);
+  });
+}
+
+/**
+ * Render the summary banner using MyStack.bannerText().
+ */
+function renderBanner(data) {
+  if (!stackState) return;
+  const text = MyStack.bannerText(stackState, data, simulate);
+
+  while (mystackBanner.firstChild) mystackBanner.removeChild(mystackBanner.firstChild);
+  mystackBanner.appendChild(document.createTextNode(text));
+
+  const hasNearby = MyStack.nearbySelected(stackState, data).length > 0;
+  mystackBanner.className = 'mystack-banner' +
+    (simulate   ? ' mystack-banner--sim'    : '') +
+    (hasNearby  ? ' mystack-banner--nearby' : '');
+}
+
+/**
+ * Render per-region failover advice for selected NEARBY regions.
+ */
+function renderAdvice(data) {
+  if (!stackState) return;
+
+  const nearby = MyStack.nearbySelected(stackState, data);
+  while (mystackAdvice.firstChild) mystackAdvice.removeChild(mystackAdvice.firstChild);
+
+  if (nearby.length === 0) {
+    mystackAdvice.hidden = true;
+    return;
+  }
+
+  // Build a region id → region lookup for alt-region labels
+  const byId = {};
+  for (const r of data.regions) byId[r.id] = r;
+
+  mystackAdvice.hidden = false;
+
+  for (const region of nearby) {
+    const item = document.createElement('div');
+    item.className = 'mystack-advice-item';
+
+    const regionSpan = document.createElement('span');
+    regionSpan.className = 'advice-region';
+    regionSpan.textContent = region.label;
+    item.appendChild(regionSpan);
+    item.appendChild(document.createTextNode(' is nearby a quake.'));
+
+    if (region.nearest_alternative) {
+      const altId    = region.nearest_alternative.id;
+      const altRegion = byId[altId];
+      const altLabel  = altRegion
+        ? altRegion.label
+        : (region.nearest_alternative.label ?? altId);
+
+      item.appendChild(document.createElement('br'));
+      const note = document.createElement('span');
+      note.className = 'advice-alt';
+      note.textContent =
+        'Nearest alternative: ' + altLabel +
+        ' \u2014 Nearest alternative by distance (health not verified).';
+      item.appendChild(note);
+    }
+
+    mystackAdvice.appendChild(item);
+  }
+}
+
+/**
+ * Show/hide the GitHub and Cloudflare sidebar panels based on selection.
+ */
+function renderProviderPanelVisibility() {
+  if (!stackState) return;
+  const panelGithub     = document.getElementById('panel-github');
+  const panelCloudflare = document.getElementById('panel-cloudflare');
+  if (panelGithub)     panelGithub.hidden     = !stackState.providers.has('GitHub');
+  if (panelCloudflare) panelCloudflare.hidden = !stackState.providers.has('Cloudflare');
+}
+
+/**
+ * Run all My Stack display updates after any state or data change.
+ */
+function applyMyStack(data) {
+  if (!data) return;
+  applyCheckboxDimming();
+  renderBanner(data);
+  renderAdvice(data);
+  renderProviderPanelVisibility();
+  // Redraw failover lines filtered to selected NEARBY regions only
+  renderFilteredFailoverLines(data);
+}
+
+// ─── Map rendering ────────────────────────────────────────────────────────────
+
 function buildQuakeMarker(quake) {
-  const radius  = 6;
-  const color   = quake.simulated ? '#a78bfa' : '#f97316';
+  const color = quake.simulated ? '#a78bfa' : '#f97316';
 
   const marker = L.circleMarker([quake.lat, quake.lon], {
-    radius,
+    radius: 6,
     color,
     fillColor: color,
     fillOpacity: 0.85,
@@ -114,7 +343,6 @@ function buildQuakeMarker(quake) {
     className: 'quake-marker',
   });
 
-  // Popup — all text via textContent nodes to avoid innerHTML injection
   const container = document.createElement('div');
 
   const place = document.createElement('p');
@@ -142,9 +370,9 @@ function buildQuakeMarker(quake) {
   const linkP = document.createElement('p');
   linkP.className = 'popup-link';
   const a = document.createElement('a');
-  a.href = quake.url;
+  a.href   = quake.url;
   a.target = '_blank';
-  a.rel = 'noopener noreferrer';
+  a.rel    = 'noopener noreferrer';
   a.textContent = quake.simulated ? 'USGS (placeholder)' : 'USGS event page';
   linkP.appendChild(a);
   container.appendChild(linkP);
@@ -154,26 +382,28 @@ function buildQuakeMarker(quake) {
 }
 
 /**
- * Build a Leaflet circle marker for a cloud region.
- * Color: nearby = red, clear = green.
+ * Build a region marker.
+ * @param {object} region
+ * @param {boolean} isSelected - if false the marker is dimmed on the map too
  */
-function buildRegionMarker(region) {
+function buildRegionMarker(region, isSelected) {
   const isNearby = region.classification.startsWith('NEARBY');
-  const color = isNearby ? '#ef4444' : '#10b981';
+  const baseColor = isNearby ? '#ef4444' : '#10b981';
+  const opacity   = isSelected ? 0.85 : 0.25;
 
   const marker = L.circleMarker([region.lat, region.lon], {
     radius: 10,
-    color,
-    fillColor: color,
-    fillOpacity: 0.85,
+    color:       isSelected ? baseColor : '#64748b',
+    fillColor:   isSelected ? baseColor : '#334155',
+    fillOpacity: opacity,
     weight: 2,
+    opacity:     isSelected ? 1 : 0.4,
   });
 
   const label = document.createElement('div');
-  const name = document.createElement('strong');
+  const name  = document.createElement('strong');
   name.textContent = region.label;
   label.appendChild(name);
-
   const cls = document.createElement('div');
   cls.textContent = region.classification;
   label.appendChild(cls);
@@ -183,116 +413,124 @@ function buildRegionMarker(region) {
   return marker;
 }
 
-/**
- * Build a pulsing 300 km circle around an epicentre.
- * Radius comes from threshold_km (passed in), not invented here.
- */
 function buildProximityCircle(lat, lon, thresholdKm) {
-  const circle = L.circle([lat, lon], {
-    radius: thresholdKm * 1000,   // Leaflet uses metres
-    color:  '#ef4444',
-    fillColor: '#ef4444',
+  return L.circle([lat, lon], {
+    radius: thresholdKm * 1000,
+    color:       '#ef4444',
+    fillColor:   '#ef4444',
     fillOpacity: 0.04,
     weight: 1.5,
-    dashArray: null,
     className: 'pulse-ring',
   });
-  return circle;
+}
+
+function buildRegionLookup(regions) {
+  const lookup = {};
+  for (const r of regions) lookup[r.id] = { lat: r.lat, lon: r.lon, label: r.label };
+  return lookup;
 }
 
 /**
- * Build a dashed polyline from epicentre to nearest-alternative region.
- * Tooltip uses the ALT_LABEL string from the API, not an invented string.
+ * Draw failover lines only for regions that are both NEARBY and selected
+ * in My Stack. Called after every fetch and after every checkbox change.
  */
-function buildFailoverLine(fromLat, fromLon, toRegion) {
-  const line = L.polyline(
-    [[fromLat, fromLon], [toRegion.lat, toRegion.lon]],
-    {
-      color: '#94a3b8',
-      weight: 1.5,
-      dashArray: '6 6',
-      opacity: 0.7,
-    }
-  );
-  line.bindTooltip(toRegion.relationship, { sticky: true });
-  return line;
+function renderFilteredFailoverLines(data) {
+  lineLayer.clearLayers();
+  if (!stackState) return;
+
+  const lookup  = buildRegionLookup(data.regions);
+  const nearby  = MyStack.nearbySelected(stackState, data);
+
+  for (const region of nearby) {
+    if (!region.nearest_alternative) continue;
+    const altId     = region.nearest_alternative.id;
+    const altCoords = lookup[altId];
+    if (!altCoords) continue;
+
+    const line = L.polyline(
+      [[region.lat, region.lon], [altCoords.lat, altCoords.lon]],
+      { color: '#94a3b8', weight: 1.5, dashArray: '6 6', opacity: 0.7 }
+    );
+    line.bindTooltip(region.nearest_alternative.relationship, { sticky: true });
+    line.addTo(lineLayer);
+  }
 }
 
-/** Rebuild all map layers from a fresh /api/radar payload. */
-function renderMap(data) {
+/** Full map + panel render from a fresh /api/radar payload. */
+function renderAll(data) {
   quakeLayer.clearLayers();
   regionLayer.clearLayers();
   circleLayer.clearLayers();
   lineLayer.clearLayers();
 
   const thresholdKm = data.threshold_km;
+  const quakeById   = {};
+  for (const q of data.quakes.items) quakeById[q.id] = q;
 
   // Quake markers
   for (const quake of data.quakes.items) {
     buildQuakeMarker(quake).addTo(quakeLayer);
   }
 
-  // Region markers + circles + failover lines
+  // Region markers + proximity circles
   for (const region of data.regions) {
-    buildRegionMarker(region).addTo(regionLayer);
+    const isSelected = !stackState || stackState.regions.has(region.id);
+    buildRegionMarker(region, isSelected).addTo(regionLayer);
 
     if (!region.classification.startsWith('NEARBY')) continue;
 
-    // For each nearby quake draw a proximity circle and a failover line
+    // Proximity circles for all NEARBY regions (not filtered by selection)
     for (const nq of region.nearby_quakes) {
-      buildProximityCircle(nq.lat ?? region.lat, nq.lon ?? region.lon, thresholdKm)
-        .addTo(circleLayer);
-
-      // The failover line runs from the region itself to its nearest alternative
-      if (region.nearest_alternative && region.nearest_alternative.lat !== undefined) {
-        buildFailoverLine(
-          region.lat, region.lon,
-          region.nearest_alternative
-        ).addTo(lineLayer);
-      }
-    }
-
-    // Draw the failover line even when nearby_quakes come without coords
-    // (they don't carry lat/lon — the circle needs the quake coords from
-    //  data.quakes.items, so look them up)
-    if (region.nearby_quakes.length > 0 && region.nearest_alternative) {
-      // Find the matching full quake object to get its coords
-      for (const nq of region.nearby_quakes) {
-        const full = data.quakes.items.find(q => q.id === nq.quake_id);
-        if (full) {
-          // Replace placeholder circle with one using the real epicentre
-          buildProximityCircle(full.lat, full.lon, thresholdKm).addTo(circleLayer);
-        }
+      const full = quakeById[nq.quake_id];
+      if (full) {
+        buildProximityCircle(full.lat, full.lon, thresholdKm).addTo(circleLayer);
       }
     }
   }
+
+  // Failover lines: selected NEARBY only (or all NEARBY before stack is loaded)
+  if (stackState) {
+    renderFilteredFailoverLines(data);
+  } else {
+    // Pre-stack fallback: draw all NEARBY failover lines
+    const lookup = buildRegionLookup(data.regions);
+    for (const region of data.regions) {
+      if (!region.classification.startsWith('NEARBY')) continue;
+      if (!region.nearest_alternative) continue;
+      const altCoords = lookup[region.nearest_alternative.id];
+      if (!altCoords) continue;
+      const line = L.polyline(
+        [[region.lat, region.lon], [altCoords.lat, altCoords.lon]],
+        { color: '#94a3b8', weight: 1.5, dashArray: '6 6', opacity: 0.7 }
+      );
+      line.bindTooltip(region.nearest_alternative.relationship, { sticky: true });
+      line.addTo(lineLayer);
+    }
+  }
+
+  renderPanels(data);
 }
 
 // ─── Panel rendering ──────────────────────────────────────────────────────────
 
 function renderUsgsPanel(quakesBlock) {
   staleUsgs.hidden = !quakesBlock.stale;
-  usgsLastUpdated.textContent = fmtUtc(quakesBlock.last_success);
-
+  setText(usgsLastUpdated, fmtUtc(quakesBlock.last_success));
   const count = quakesBlock.live_count;
-  usgsCount.textContent = count + ' M4.5+ event' + (count === 1 ? '' : 's') + ' in last 24 h';
+  setText(usgsCount, count + ' M4.5+ event' + (count === 1 ? '' : 's') + ' in last 24 h');
 }
 
 function renderComponentList(ulEl, components) {
   while (ulEl.firstChild) ulEl.removeChild(ulEl.firstChild);
-
   for (const c of components) {
-    const li   = document.createElement('li');
+    const li = document.createElement('li');
     li.className = 'component-item';
-
     const nameSpan = document.createElement('span');
     nameSpan.className = 'component-name';
     nameSpan.textContent = c.name;
-
     const statusSpan = document.createElement('span');
     statusSpan.className = 'component-status-' + statusClass(c.status);
     statusSpan.textContent = statusLabel(c.status);
-
     li.appendChild(nameSpan);
     li.appendChild(statusSpan);
     ulEl.appendChild(li);
@@ -301,16 +539,14 @@ function renderComponentList(ulEl, components) {
 
 function renderIncidentList(ulEl, incidents) {
   while (ulEl.firstChild) ulEl.removeChild(ulEl.firstChild);
-
   for (const inc of incidents) {
     const li = document.createElement('li');
     li.className = 'incident-item';
-
     if (inc.url) {
       const a = document.createElement('a');
-      a.href = inc.url;
+      a.href   = inc.url;
       a.target = '_blank';
-      a.rel = 'noopener noreferrer';
+      a.rel    = 'noopener noreferrer';
       a.textContent = inc.name;
       li.appendChild(a);
     } else {
@@ -321,19 +557,18 @@ function renderIncidentList(ulEl, incidents) {
 }
 
 function renderProviderPanel(provider, staleEl, sourceEl, lastUpdEl, descEl, compEl, incEl) {
-  staleEl.hidden    = !provider.stale;
-  if (provider.provider) sourceEl.textContent = provider.provider;
-  lastUpdEl.textContent = fmtUtc(provider.last_success);
-  descEl.textContent    = provider.description ?? '—';
+  staleEl.hidden = !provider.stale;
+  if (provider.provider) setText(sourceEl, provider.provider);
+  setText(lastUpdEl, fmtUtc(provider.last_success));
+  setText(descEl,    provider.description ?? '—');
   renderComponentList(compEl, provider.components ?? []);
-  renderIncidentList(incEl, provider.incidents ?? []);
+  renderIncidentList(incEl,  provider.incidents   ?? []);
 }
 
-/** Full panel update from a data payload. */
 function renderPanels(data) {
   renderUsgsPanel(data.quakes);
 
-  const providers = data.providers ?? [];
+  const providers  = data.providers ?? [];
   const github     = providers.find(p => p.provider === 'GitHub');
   const cloudflare = providers.find(p => p.provider === 'Cloudflare');
 
@@ -353,110 +588,6 @@ function renderPanels(data) {
   }
 }
 
-// ─── Failover line alt-region coordinate lookup ───────────────────────────────
-// nearest_alternative in the API carries {id, label, distance_km, relationship}
-// but not lat/lon.  We need the region registry to draw the line endpoint.
-// Build a lookup from the regions array in the response itself.
-
-function buildRegionLookup(regions) {
-  const lookup = {};
-  for (const r of regions) {
-    lookup[r.id] = { lat: r.lat, lon: r.lon, label: r.label };
-  }
-  return lookup;
-}
-
-/** Re-renders failover lines using lat/lon from the full regions list. */
-function renderFailoverLines(data) {
-  lineLayer.clearLayers();
-
-  const lookup      = buildRegionLookup(data.regions);
-  const thresholdKm = data.threshold_km;
-
-  for (const region of data.regions) {
-    if (!region.classification.startsWith('NEARBY')) continue;
-    if (!region.nearest_alternative) continue;
-
-    const altId   = region.nearest_alternative.id;
-    const altCoords = lookup[altId];
-    if (!altCoords) continue;
-
-    const altObj = {
-      lat:          altCoords.lat,
-      lon:          altCoords.lon,
-      relationship: region.nearest_alternative.relationship,
-    };
-
-    const line = L.polyline(
-      [[region.lat, region.lon], [altCoords.lat, altCoords.lon]],
-      {
-        color: '#94a3b8',
-        weight: 1.5,
-        dashArray: '6 6',
-        opacity: 0.7,
-      }
-    );
-    line.bindTooltip(region.nearest_alternative.relationship, { sticky: true });
-    line.addTo(lineLayer);
-  }
-}
-
-/** Full map render that handles the alt-region coordinate lookup. */
-function renderAll(data) {
-  quakeLayer.clearLayers();
-  regionLayer.clearLayers();
-  circleLayer.clearLayers();
-  lineLayer.clearLayers();
-
-  const thresholdKm = data.threshold_km;
-  const lookup      = buildRegionLookup(data.regions);
-
-  // Quake markers
-  for (const quake of data.quakes.items) {
-    buildQuakeMarker(quake).addTo(quakeLayer);
-  }
-
-  // Build a quake-id → quake map for circle placement
-  const quakeById = {};
-  for (const q of data.quakes.items) quakeById[q.id] = q;
-
-  // Region markers, proximity circles, failover lines
-  for (const region of data.regions) {
-    buildRegionMarker(region).addTo(regionLayer);
-
-    if (!region.classification.startsWith('NEARBY')) continue;
-
-    // Proximity circles — one per nearby quake, centred on the epicentre
-    for (const nq of region.nearby_quakes) {
-      const full = quakeById[nq.quake_id];
-      if (full) {
-        buildProximityCircle(full.lat, full.lon, thresholdKm).addTo(circleLayer);
-      }
-    }
-
-    // Failover line from this region to its nearest alternative
-    if (region.nearest_alternative) {
-      const altId     = region.nearest_alternative.id;
-      const altCoords = lookup[altId];
-      if (altCoords) {
-        const line = L.polyline(
-          [[region.lat, region.lon], [altCoords.lat, altCoords.lon]],
-          {
-            color: '#94a3b8',
-            weight: 1.5,
-            dashArray: '6 6',
-            opacity: 0.7,
-          }
-        );
-        line.bindTooltip(region.nearest_alternative.relationship, { sticky: true });
-        line.addTo(lineLayer);
-      }
-    }
-  }
-
-  renderPanels(data);
-}
-
 // ─── Fetch & poll ─────────────────────────────────────────────────────────────
 
 async function fetchRadar() {
@@ -469,15 +600,17 @@ async function fetchRadar() {
 
     lastData = data;
     updateError.hidden = true;
-    renderAll(data);
-  } catch (err) {
-    // Keep the existing map layers; show non-blocking notice
-    updateError.hidden = false;
-    // If we have no data at all yet, show a minimal message
-    if (!lastData) {
-      updateError.querySelector('#update-error-text') ??
-        (updateError.firstElementChild.textContent = 'Update failed, showing last data.');
+
+    // Build My Stack checkboxes once; load/update state on every fetch
+    const firstFetch = !stackState;
+    if (firstFetch) {
+      initMyStack(data);
     }
+
+    renderAll(data);
+    applyMyStack(data);
+  } catch (_) {
+    updateError.hidden = false;
   }
 }
 
@@ -485,7 +618,7 @@ async function fetchRadar() {
 
 btnSimulate.addEventListener('click', () => {
   simulate = true;
-  simBanner.hidden  = false;
+  simBanner.hidden   = false;
   btnSimulate.hidden = true;
   btnClear.hidden    = false;
   fetchRadar();

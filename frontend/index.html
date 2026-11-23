@@ -17,7 +17,7 @@
        SIMULATION BANNER  (hidden by default)
   ═══════════════════════════════════════════════════════════════════ -->
   <div id="sim-banner" class="sim-banner" hidden>
-    <span id="sim-banner-text">SIMULATION: Tokyo M6.8 — demo stress test active</span>
+    <span>SIMULATION: Tokyo M6.8 — demo stress test active</span>
   </div>
 
   <!-- ═══════════════════════════════════════════════════════════════════
@@ -29,8 +29,9 @@
       <h1>Failover Radar</h1>
     </div>
     <div class="header-controls">
-      <button id="btn-simulate" class="btn btn-warn" type="button">Simulate</button>
-      <button id="btn-clear"    class="btn btn-clear" type="button" hidden>Clear</button>
+      <button id="btn-mystack"  class="btn btn-stack"  type="button" aria-expanded="false" aria-controls="mystack-drawer">My Stack</button>
+      <button id="btn-simulate" class="btn btn-warn"   type="button">Simulate</button>
+      <button id="btn-clear"    class="btn btn-clear"  type="button" hidden>Clear</button>
     </div>
   </header>
 
@@ -40,6 +41,50 @@
   <div id="update-error" class="update-error" hidden>
     <span id="update-error-text">Update failed, showing last data.</span>
   </div>
+
+  <!-- ═══════════════════════════════════════════════════════════════════
+       MY STACK DRAWER  (desktop: sidebar panel; mobile: bottom sheet)
+  ═══════════════════════════════════════════════════════════════════ -->
+  <div id="mystack-drawer" class="mystack-drawer" aria-label="My Stack filter" hidden>
+    <div class="mystack-drawer-inner">
+
+      <div class="mystack-drawer-header">
+        <span class="mystack-drawer-title">My Stack</span>
+        <button id="btn-mystack-close" class="btn btn-ghost mystack-close-btn" type="button" aria-label="Close My Stack">✕</button>
+      </div>
+
+      <p class="mystack-hint">Pick the regions and providers you use. Saved in this browser only — never sent to the server.</p>
+
+      <!-- My Stack summary banner -->
+      <div id="mystack-banner" class="mystack-banner" aria-live="polite"></div>
+
+      <!-- Nearby advice: one row per selected NEARBY region -->
+      <div id="mystack-advice" class="mystack-advice" hidden aria-live="polite"></div>
+
+      <div class="mystack-columns">
+
+        <fieldset class="mystack-fieldset">
+          <legend class="mystack-legend">Cloud regions</legend>
+          <div id="mystack-region-list" class="mystack-checklist">
+            <span class="mystack-loading">Loading regions…</span>
+          </div>
+        </fieldset>
+
+        <fieldset class="mystack-fieldset">
+          <legend class="mystack-legend">SaaS providers</legend>
+          <div id="mystack-provider-list" class="mystack-checklist">
+            <!-- populated by app.js once provider list is known -->
+            <span class="mystack-loading">Loading providers…</span>
+          </div>
+        </fieldset>
+
+      </div><!-- .mystack-columns -->
+
+    </div><!-- .mystack-drawer-inner -->
+  </div><!-- #mystack-drawer -->
+
+  <!-- Scrim — closes drawer on mobile tap-outside -->
+  <div id="mystack-scrim" class="mystack-scrim" hidden aria-hidden="true"></div>
 
   <!-- ═══════════════════════════════════════════════════════════════════
        MAIN LAYOUT
@@ -85,7 +130,7 @@
             </p>
             <p class="panel-detail" id="github-description">—</p>
             <ul class="component-list" id="github-components"></ul>
-            <ul class="incident-list" id="github-incidents"></ul>
+            <ul class="incident-list"  id="github-incidents"></ul>
           </div>
         </details>
       </section>
@@ -104,7 +149,7 @@
             </p>
             <p class="panel-detail" id="cloudflare-description">—</p>
             <ul class="component-list" id="cloudflare-components"></ul>
-            <ul class="incident-list" id="cloudflare-incidents"></ul>
+            <ul class="incident-list"  id="cloudflare-incidents"></ul>
           </div>
         </details>
       </section>
@@ -126,6 +171,7 @@
     </aside>
   </main>
 
+  <script src="/stack.js"></script>
   <script src="/app.js"></script>
 </body>
 </html>
