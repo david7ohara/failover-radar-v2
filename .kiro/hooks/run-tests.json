@@ -8,8 +8,8 @@
       "matcher": "backend/.*\\.py",
       "action": {
         "type": "command",
-        "command": "cd /workspaces/failover-radar-v2 && python -m pytest backend/tests/ -q 2>&1 | tail -20",
-        "timeout": 60
+        "command": "cd \"$(git rev-parse --show-toplevel)\" && python -m pytest backend/tests/ -q 2>&1 | tail -20",
+       "timeout": 60
       }
     }
   ]
