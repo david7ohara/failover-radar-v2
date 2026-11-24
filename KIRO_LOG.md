@@ -12,8 +12,7 @@
 | **T7 My Stack** | Created pure `frontend/stack.js` (`localStorage` only) + mobile drawer | Handled empty selection cleanly (`"Pick at least one region or provider"`) | `specs`, `steering`, 20 `node --test` unit tests | ~3.5 |
 | **T8 Template checklist** | Built deterministic `/api/checklist` + `checklist_templates.json` (no LLM) | Fixed mobile Safari scroll/scrim overlay & verified `https://` links | `specs`, `steering`, 70 `pytest` tests | ~6.1 |
 | **T9 Copy incident brief** | Built pure `frontend/brief.js` + 3-stage Safari clipboard fallback | Updated `requirements.md` R9 from Markdown/AI wording to plain-text template | `specs`, `steering`, 14 `node --test` tests (`104` total) | ~7.2 |
-| **T10 audit & docs** | Verified `70` pytest + `34` node tests and finalized `README.md` & `KIRO_LOG.md` | Removed an unsupported `.kiro/hooks` claim during the audit; a test-on-save hook (`.kiro/hooks/run-tests.json`) has since been added, so hooks are now used
-| Manual audit + `pytest` + `node --test` | 0.0 |
+| **T10 audit & docs** | Verified `70` pytest + `34` node tests and finalized `README.md` & `KIRO_LOG.md` | Removed an unsupported `.kiro/hooks` claim during the audit; a test-on-save hook (`.kiro/hooks/run-tests.json`) has since been added, so hooks are now used | Manual audit + `pytest` + `node --test` | 0.0 |
 
 ## Kiro CLI Notes
 Hooks: `.kiro/hooks/run-tests.json` is a PostFileSave command hook that runs the backend tests after Kiro edits backend Python files. Observed: [write only what you saw, for example "a pytest summary appeared after Kiro edited backend/geo.py"; if you haven't tested it, write "not yet confirmed firing in the CLI"].
