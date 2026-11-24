@@ -16,6 +16,8 @@
 | Manual audit + `pytest` + `node --test` | 0.0 |
 
 ## Kiro CLI Notes
+Hooks: `.kiro/hooks/run-tests.json` is a PostFileSave command hook that runs the backend tests after Kiro edits backend Python files. Observed: [write only what you saw, for example "a pytest summary appeared after Kiro edited backend/geo.py"; if you haven't tested it, write "not yet confirmed firing in the CLI"].
+I also tried a wording-guard hook. A manual test showed it flagged comments and test files that list the banned words, so I removed it. Wording is enforced by tests instead.
 
 - **What worked well:** Running Kiro CLI in a two-step **Plan -> Audit against `.kiro/steering/` -> Approve** workflow kept every file edit small, predictable, and 100% aligned with data-integrity rules. Starting fresh `kiro-cli chat` sessions (`0%` context) per task prevented context bloat and saved credits.
 - **What did not / lessons learned:** Large multi-task prompts consumed extra context tokens, whereas breaking work into single-task prompts (`PROMPT_1.md`–`PROMPT_10.md`) with explicit file scopes kept credit usage low and test suites green on every commit.
