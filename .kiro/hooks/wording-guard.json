@@ -1,0 +1,14 @@
+{
+  "version": "v1",
+  "hooks": [
+    {
+      "name": "wording-guard",
+      "trigger": "PostFileSave",
+      "matcher": "(frontend|backend)/.*\\.(py|js|html|json|css)$",
+      "action": {
+        "type": "command",
+        "command": "sh -c '! grep -rniE \"affected|impacted|unhealthy|outage confirmed\" frontend backend --exclude-dir=tests --exclude-dir=__pycache__'"
+      }
+    }
+  ]
+}
