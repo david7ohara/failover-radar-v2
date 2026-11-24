@@ -29,12 +29,18 @@
   padding: 0;
 }
 
-html, body {
+html {
   height: 100%;
   overflow-x: hidden;
 }
 
 body {
+  /* Fix 1: allow vertical scroll so the checklist panel below app-main
+     is reachable on iPhone Safari.  min-height (not height) lets the body
+     grow past the viewport.  overflow-y: auto lets Safari scroll it. */
+  min-height: 100%;
+  overflow-x: hidden;
+  overflow-y: auto;
   background: var(--bg);
   color: var(--text);
   font-family: system-ui, -apple-system, sans-serif;
@@ -127,13 +133,24 @@ h1 {
 
 /* ── Main layout ───────────────────────────────────────────────────────── */
 .app-main {
+  /* Fix 1: flex: 1 with min-height: 0 gives the grid a bounded height so
+     Leaflet can fill its pane, while the body scrolls vertically to reach
+     the checklist panel below.  overflow is NOT set here — clipping the map
+     column is handled by map-pane position:relative + #map height:100%. */
   flex: 1;
-  display: grid;
+  min-height: 0;
   /* Desktop: map 60%, sidebar 40% */
+  display: grid;
   grid-template-columns: 60fr 40fr;
   grid-template-rows: 1fr;
-  min-height: 0;
-  overflow: hidden;
+}
+
+/* Desktop: give app-main a concrete viewport height so the map fills it
+   without relying on overflow:hidden to constrain children. */
+@media (min-width: 768px) {
+  .app-main {
+    height: calc(100dvh - 56px); /* full viewport minus header */
+  }
 }
 
 /* ── Leaflet tile pane — dark-cyan NOC radar filter ────────────────────── */
@@ -145,6 +162,8 @@ h1 {
 .map-pane {
   position: relative;
   min-height: 0;
+  /* Fix 1: clip map tiles within the pane only, not the whole page */
+  overflow: hidden;
 }
 
 #map {
@@ -412,8 +431,21 @@ details[open] .panel-details-toggle {
 }
 
 /* ── My Stack scrim ────────────────────────────────────────────────────── */
+/* Fix 3: manage visibility via .is-open class only — avoids the hidden
+   attribute and media-query display:none fighting each other on Safari. */
 .mystack-scrim {
-  display: none;         /* only shown via JS on mobile */
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.55);
+  z-index: 499;
+}
+
+/* Show scrim on mobile only when drawer is open */
+@media (max-width: 767px) {
+  .mystack-scrim.is-open {
+    display: block;
+  }
 }
 
 /* ── My Stack hint ─────────────────────────────────────────────────────── */
@@ -549,14 +581,6 @@ details[open] .panel-details-toggle {
     border-left: none;
     border-top: 1px solid var(--border);
     border-radius: 12px 12px 0 0;
-  }
-
-  .mystack-scrim {
-    display: block;
-    position: fixed;
-    inset: 0;
-    background: rgba(0, 0, 0, 0.55);
-    z-index: 499;
   }
 
   .mystack-columns {

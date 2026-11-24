@@ -110,13 +110,13 @@ function setText(el, text) {
 
 function openDrawer() {
   drawer.hidden = false;
-  scrim.hidden  = false;
+  scrim.classList.add('is-open');
   btnMyStack.setAttribute('aria-expanded', 'true');
 }
 
 function closeDrawer() {
   drawer.hidden = true;
-  scrim.hidden  = true;
+  scrim.classList.remove('is-open');
   btnMyStack.setAttribute('aria-expanded', 'false');
 }
 
@@ -759,6 +759,9 @@ async function refreshChecklist(data) {
   // Clear existing cards
   while (checklistCards.firstChild) checklistCards.removeChild(checklistCards.firstChild);
 
+  // Fix 2: guard only blocks the fetch, not the panel reveal.
+  // stackState is always set before this is called (initMyStack runs first),
+  // but be defensive in case of unexpected call order.
   if (!stackState) {
     checklistPanel.hidden = true;
     return;
@@ -789,7 +792,10 @@ async function refreshChecklist(data) {
     requests.push({});
   }
 
+  // Fix 2: reveal the panel before awaiting any fetch so it is never
+  // left hidden if a fetch silently fails.
   checklistPanel.hidden = false;
+
   for (const params of requests) {
     await fetchAndAppendChecklist(params);
   }
