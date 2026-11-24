@@ -30,11 +30,13 @@
 - [ ] **T7: My Stack**
   - Add the My Stack drawer to the frontend: region and provider toggles, `localStorage` persistence, in-memory fallback when storage is blocked, and My Stack alerts surfaced at the top of the dashboard.
 
-- [ ] **T8: Checklist Endpoint — Validator & Fallback**
-  - Implement `POST /api/checklist` in `backend/checklist.py` and `backend/main.py`.
-  - Build the checklist exclusively from the backend's computed data (Haversine distances, Statuspage titles, region names).
-  - Reject any LLM response containing a number not present in the input payload and fall back to the deterministic template.
-  - Label every response `"AI-generated suggestions. Verify before acting."` (LLM path) or `"Template checklist."` (deterministic path).
+- [ ] **T8: Checklist Endpoint — Template Engine**
+  - Create `backend/data/checklist_templates.json` with four scenarios: `quake_nearby`, `provider_degraded`, `both`, `all_clear`. Each scenario has a title and ordered steps; steps are plain sentences with placeholders from the fixed set: `{event_title}`, `{magnitude}`, `{distance_km}`, `{region_label}`, `{provider_name}`, `{incident_name}`, `{usgs_url}`, `{status_url}`, `{nearest_label}`, `{generated_at_utc}`.
+  - Implement `backend/checklist.py`: select scenario from radar data, fill placeholders only from backend-computed values (same data `/api/radar` uses). A missing value is omitted, never guessed. No LLM, no API key.
+  - Wire `GET /api/checklist?region_id=...&event_id=...&provider=...&simulate=false` in `backend/main.py`. Unknown ids return HTTP 404 with a short JSON error. With `simulate=true` the title starts with `SIMULATION:`.
+  - Every response includes: `label` = `"Template checklist"`, `scenario`, `title`, `steps` (text + optional `https` link), `sources`, `generated_at_utc`, and a stale warning with `last_success` for any stale feed.
+  - Wording rules: use "nearby"; never use "affected", "impacted", "healthy", "unhealthy", "caused", or "outage confirmed"; seismic and provider signals are parallel, never causal; failover steps must say "nearest alternative by distance, health not verified"; steps are suggestions to verify, never commands; `all_clear` must include the "does not guarantee" caveat.
+  - Write tests with no network calls: each scenario renders; every number in the output exists in the input; simulated titles start with `SIMULATION:`; stale warning appears; unknown ids return 404; forbidden words are absent from templates and responses; all links are `https` only.
 
 - [ ] **T9: Copy Incident Brief**
   - In `frontend/app.js` generate the Markdown incident brief with UTC timestamp, `SIMULATION:` prefix when simulated, exact Haversine kilometres, `"nearby"` phrasing (never `"affected"`), provider statuses, checklist steps, and clickable USGS/Statuspage URLs.

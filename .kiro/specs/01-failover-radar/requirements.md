@@ -38,13 +38,16 @@
   1. THE frontend SHALL render a dark-mode **Leaflet.js** map using CartoDB Dark Matter tiles with visible CartoDB and OpenStreetMap attribution.
   2. WHEN a region is `NEARBY (within 300 km)`, THE map SHALL draw a pulsing 300 km radius ring around the epicenter and a dashed failover vector line to the nearest alternative region.
 
-## Requirement 7: Validated AI Operator Checklist with Template Fallback
-- **User Story:** As an on-call engineer, I want an actionable failover checklist generated from live telemetry that never crashes if an AI key is missing.
+## Requirement 7: Template-Based Operator Checklist
+- **User Story:** As an on-call engineer, I want an actionable failover checklist built from live telemetry data, clearly labeled as a template, so I can triage quickly without relying on an external AI service.
 - **Acceptance Criteria:**
-  1. WHEN `POST /api/checklist` is called with current radar state and `My Stack`, THE system SHALL generate a structured 4-step failover runbook built exclusively from the backend's own computed data (Haversine distances, Statuspage titles, region names). Zero numbers may be invented.
-  2. IF the LLM response contains any number that was not present in the input payload, THE system SHALL discard that response and return the deterministic template instead.
-  3. IF no LLM API key is configured or the LLM request fails, THEN THE system SHALL return a deterministic template-based operator checklist using exact Haversine distances and Statuspage titles.
-  4. Every checklist returned to the client SHALL be labeled either `"AI-generated suggestions. Verify before acting."` (LLM path) or `"Template checklist."` (deterministic path).
+  1. WHEN `GET /api/checklist?region_id=...&event_id=...&provider=...&simulate=false` is called, THE system SHALL select one of four scenarios (`quake_nearby`, `provider_degraded`, `both`, `all_clear`) from `backend/data/checklist_templates.json` and fill placeholders exclusively from the backend's own computed data (Haversine distances, Statuspage titles, region names, USGS event fields). Zero values may be invented or accepted from the client.
+  2. WHEN `simulate=true` is passed, THE checklist title SHALL begin with `SIMULATION:`.
+  3. Unknown `region_id` or `event_id` values SHALL return HTTP 404 with a short JSON error message.
+  4. Every checklist response SHALL be labeled `"Template checklist"`, include the scenario name, a `generated_at_utc` timestamp, the ordered steps (each step as plain text plus an optional `https` link), sources with clickable URLs, and a stale warning with `last_success` for any feed that returned stale data.
+  5. Steps SHALL use the word "nearby" and SHALL NOT use the words "affected", "impacted", "healthy", "unhealthy", "caused", or "outage confirmed". Seismic proximity and provider status SHALL be presented as parallel signals, never causally linked. Any step referring to a backup region SHALL state: "nearest alternative by distance, health not verified — verify before shifting traffic." Steps are suggestions to verify, never commands.
+  6. The `all_clear` scenario SHALL state: "No nearby quake and no degraded provider in the data fetched at [time]. This does not guarantee nothing is wrong."
+  7. All links in the response SHALL use `https` only.
 
 ## Requirement 8: Mobile & Desktop Responsive Layout + Early Deployment
 - **User Story:** As a builder working on iPhone Safari for desktop judges, I want a clean responsive layout deployed early on Railway.

@@ -1,0 +1,86 @@
+{
+  "quake_nearby": {
+    "title": "Operator checklist — quake nearby {region_label}",
+    "steps": [
+      {
+        "text": "A M{magnitude} seismic event was detected {distance_km} km from {region_label}. This is a proximity signal only — no causal link to any service status has been established.",
+        "link_placeholder": "{usgs_url}"
+      },
+      {
+        "text": "Review the USGS event page for the latest magnitude and depth updates before taking any action.",
+        "link_placeholder": "{usgs_url}"
+      },
+      {
+        "text": "Check your workloads running in {region_label} for elevated error rates or latency. Use your own observability tooling — do not rely solely on this dashboard.",
+        "link_placeholder": null
+      },
+      {
+        "text": "If you decide to shift traffic, the nearest alternative region by distance is {nearest_label} — nearest alternative by distance, health not verified — verify before shifting traffic.",
+        "link_placeholder": null
+      },
+      {
+        "text": "Confirm current provider status independently before making any routing changes.",
+        "link_placeholder": null
+      }
+    ]
+  },
+  "provider_degraded": {
+    "title": "Operator checklist — {provider_name} status signal",
+    "steps": [
+      {
+        "text": "The {provider_name} status page is reporting a non-operational condition: {incident_name}. Review the incident page for the latest updates.",
+        "link_placeholder": "{status_url}"
+      },
+      {
+        "text": "Verify whether your specific services or API endpoints within {provider_name} are within the scope of this reported signal.",
+        "link_placeholder": "{status_url}"
+      },
+      {
+        "text": "Check your own error budgets and SLO dashboards independently — a provider signal does not confirm any disruption to your workloads.",
+        "link_placeholder": null
+      },
+      {
+        "text": "If a provider-side issue is confirmed through your own tooling, consider whether a temporary fallback is warranted. Any alternative is nearest alternative by distance, health not verified — verify before shifting traffic.",
+        "link_placeholder": null
+      }
+    ]
+  },
+  "both": {
+    "title": "Operator checklist — quake nearby {region_label} and {provider_name} status signal",
+    "steps": [
+      {
+        "text": "Two parallel signals are present. First: a M{magnitude} seismic event was detected {distance_km} km from {region_label}. Second: {provider_name} is reporting a non-operational condition. These are independent data points — no causal link between them has been established.",
+        "link_placeholder": "{usgs_url}"
+      },
+      {
+        "text": "Review the USGS event page for magnitude and depth updates.",
+        "link_placeholder": "{usgs_url}"
+      },
+      {
+        "text": "Review the {provider_name} status page for the current incident scope: {incident_name}.",
+        "link_placeholder": "{status_url}"
+      },
+      {
+        "text": "Use your own observability tooling to determine whether either signal has a measurable effect on your workloads in {region_label}.",
+        "link_placeholder": null
+      },
+      {
+        "text": "If you decide to shift traffic, the nearest alternative region by distance is {nearest_label} — nearest alternative by distance, health not verified — verify before shifting traffic.",
+        "link_placeholder": null
+      }
+    ]
+  },
+  "all_clear": {
+    "title": "Operator checklist — no signals in current data",
+    "steps": [
+      {
+        "text": "No nearby quake and no non-operational provider in the data fetched at {generated_at_utc}. This does not guarantee nothing is wrong.",
+        "link_placeholder": null
+      },
+      {
+        "text": "Continue normal monitoring. Poll this dashboard again or check upstream sources directly if you have reason to suspect an issue.",
+        "link_placeholder": null
+      }
+    ]
+  }
+}

@@ -15,9 +15,10 @@ from __future__ import annotations
 from datetime import datetime, timezone
 from typing import Any
 
-from fastapi import FastAPI, Query
+from fastapi import FastAPI, HTTPException, Query
 from fastapi.staticfiles import StaticFiles
 
+from backend.checklist import build_checklist
 from backend.feeds import fetch_cloudflare_status, fetch_github_status, fetch_usgs
 from backend.geo import (
     CLEAR_LABEL,
@@ -201,6 +202,67 @@ async def radar(
         "regions": regions_out,
         "attribution": ATTRIBUTION,
     }
+
+
+# ---------------------------------------------------------------------------
+# Checklist
+# ---------------------------------------------------------------------------
+
+
+@app.get("/api/checklist")
+async def checklist(
+    region_id: str | None = Query(default=None, description="AWS region id, e.g. ap-northeast-1"),
+    event_id:  str | None = Query(default=None, description="USGS event id or SIMULATION-1"),
+    provider:  str | None = Query(default=None, description="Provider name: GitHub | Cloudflare"),
+    simulate:  bool       = Query(default=False, description="Prefix title with SIMULATION:"),
+) -> dict[str, Any]:
+    import asyncio
+
+    usgs_data, github_data, cloudflare_data = await asyncio.gather(
+        fetch_usgs(),
+        fetch_github_status(),
+        fetch_cloudflare_status(),
+    )
+
+    # Build a minimal radar_data dict identical in shape to /api/radar
+    live_quakes: list[dict[str, Any]] = usgs_data["earthquakes"]
+    all_quakes = list(live_quakes)
+    if simulate:
+        sim_quake = _build_simulation_quake()
+        all_quakes.append(sim_quake)
+
+    regions_out = [_build_region_entry(r, all_quakes) for r in REGIONS]
+
+    quakes_out = list(live_quakes)
+    if simulate:
+        quakes_out.append(sim_quake)
+
+    radar_data = {
+        "quakes": {
+            "stale": usgs_data["stale"],
+            "last_success": usgs_data["last_success"],
+            "items": quakes_out,
+        },
+        "providers": [
+            {**github_data},
+            {**cloudflare_data},
+        ],
+        "regions": regions_out,
+        "attribution": ATTRIBUTION,
+    }
+
+    try:
+        result = build_checklist(
+            region_id=region_id,
+            event_id=event_id,
+            provider=provider,
+            simulate=simulate,
+            radar_data=radar_data,
+        )
+    except ValueError as exc:
+        raise HTTPException(status_code=404, detail={"error": str(exc)}) from exc
+
+    return result
 
 
 # ---------------------------------------------------------------------------

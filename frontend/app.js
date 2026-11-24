@@ -327,6 +327,8 @@ function applyMyStack(data) {
   renderProviderPanelVisibility();
   // Redraw failover lines filtered to selected NEARBY regions only
   renderFilteredFailoverLines(data);
+  // Rebuild checklist panel (async — fires and doesn't block the render)
+  refreshChecklist(data);
 }
 
 // ─── Map rendering ────────────────────────────────────────────────────────────
@@ -631,6 +633,167 @@ btnClear.addEventListener('click', () => {
   btnClear.hidden    = true;
   fetchRadar();
 });
+
+// ─── Checklist panel ──────────────────────────────────────────────────────────
+
+const checklistPanel = document.getElementById('checklist-panel');
+const checklistCards = document.getElementById('checklist-cards');
+
+/**
+ * Build and return a checklist card DOM element for one API response.
+ * Uses textContent only — never innerHTML.
+ */
+function buildChecklistCard(data) {
+  const card = document.createElement('div');
+  card.className = 'checklist-card' + (data.title.startsWith('SIMULATION:') ? ' checklist-card--sim' : '');
+
+  // Title
+  const title = document.createElement('p');
+  title.className = 'checklist-card__title' + (data.title.startsWith('SIMULATION:') ? ' checklist-card__title--sim' : '');
+  title.textContent = data.title;
+  card.appendChild(title);
+
+  // Stale warning (if any)
+  if (data.stale_feeds && data.stale_feeds.length > 0) {
+    const stale = document.createElement('p');
+    stale.className = 'checklist-stale';
+    const feedNames = data.stale_feeds.map(sf => sf.feed).join(', ');
+    const lastTs    = data.stale_feeds[0].last_success || 'unknown';
+    stale.textContent = 'STALE data — ' + feedNames + ' last updated ' + lastTs;
+    card.appendChild(stale);
+  }
+
+  // Steps
+  const ol = document.createElement('ol');
+  ol.className = 'checklist-steps';
+
+  for (const step of (data.steps || [])) {
+    const li = document.createElement('li');
+    li.className = 'checklist-step';
+
+    // Tick-box — state held in memory only, never sent anywhere
+    const cb = document.createElement('input');
+    cb.type      = 'checkbox';
+    cb.className = 'checklist-step__cb';
+    cb.setAttribute('aria-label', 'Mark step done');
+    cb.addEventListener('change', () => {
+      li.classList.toggle('checklist-step--checked', cb.checked);
+    });
+
+    const body = document.createElement('span');
+    body.className = 'checklist-step__body';
+
+    const text = document.createElement('span');
+    text.textContent = step.text;
+    body.appendChild(text);
+
+    if (step.link) {
+      body.appendChild(document.createElement('br'));
+      const a = document.createElement('a');
+      a.href      = step.link;
+      a.target    = '_blank';
+      a.rel       = 'noopener noreferrer';
+      a.className = 'checklist-step__link';
+      a.textContent = step.link;
+      body.appendChild(a);
+    }
+
+    li.appendChild(cb);
+    li.appendChild(body);
+    ol.appendChild(li);
+  }
+
+  card.appendChild(ol);
+
+  // Sources
+  if (data.sources && data.sources.length > 0) {
+    const sources = document.createElement('div');
+    sources.className = 'checklist-sources';
+
+    const label = document.createElement('span');
+    label.textContent = 'Sources: ';
+    sources.appendChild(label);
+
+    for (const src of data.sources) {
+      const a = document.createElement('a');
+      a.href      = src.url;
+      a.target    = '_blank';
+      a.rel       = 'noopener noreferrer';
+      a.textContent = src.name;
+      sources.appendChild(a);
+    }
+
+    card.appendChild(sources);
+  }
+
+  return card;
+}
+
+/**
+ * Fetch checklist data from the server for a given region or provider and
+ * append a card.  My Stack selection stays in the browser — only the
+ * region_id / provider name is sent as a query parameter, never the full stack.
+ */
+async function fetchAndAppendChecklist(params) {
+  const qs = new URLSearchParams();
+  if (params.region_id) qs.set('region_id', params.region_id);
+  if (params.event_id)  qs.set('event_id',  params.event_id);
+  if (params.provider)  qs.set('provider',  params.provider);
+  if (simulate)         qs.set('simulate',  'true');
+
+  try {
+    const r = await fetch('/api/checklist?' + qs.toString());
+    if (!r.ok) return;   // 404 or other — silently skip
+    const data = await r.json();
+    checklistCards.appendChild(buildChecklistCard(data));
+  } catch (_) {
+    // Network error — silently skip; the main update-error banner already shows
+  }
+}
+
+/**
+ * Rebuild the checklist panel after each radar fetch.
+ * Called from applyMyStack whenever stackState or data changes.
+ */
+async function refreshChecklist(data) {
+  // Clear existing cards
+  while (checklistCards.firstChild) checklistCards.removeChild(checklistCards.firstChild);
+
+  if (!stackState) {
+    checklistPanel.hidden = true;
+    return;
+  }
+
+  const requests = [];
+
+  // One card per selected NEARBY region
+  const nearby = MyStack.nearbySelected(stackState, data);
+  for (const region of nearby) {
+    const firstQuake = region.nearby_quakes && region.nearby_quakes[0];
+    requests.push({
+      region_id: region.id,
+      event_id:  firstQuake ? firstQuake.quake_id : undefined,
+    });
+  }
+
+  // One card per selected degraded provider
+  for (const prov of (data.providers || [])) {
+    if (!stackState.providers.has(prov.provider)) continue;
+    const degradedIndicators = new Set(['degraded_performance', 'partial_outage', 'major_outage']);
+    if (!degradedIndicators.has(prov.indicator)) continue;
+    requests.push({ provider: prov.provider });
+  }
+
+  // If nothing warrants a checklist, show all_clear
+  if (requests.length === 0) {
+    requests.push({});
+  }
+
+  checklistPanel.hidden = false;
+  for (const params of requests) {
+    await fetchAndAppendChecklist(params);
+  }
+}
 
 // ─── Bootstrap ────────────────────────────────────────────────────────────────
 
