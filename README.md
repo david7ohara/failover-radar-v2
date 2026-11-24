@@ -1,85 +1,53 @@
 # Failover Radar
 
-Real-time infrastructure resilience dashboard for on-call engineers and startup founders. Shows live USGS seismic telemetry and cloud provider status (GitHub, Cloudflare) side by side, computes exact Haversine distances to your cloud regions, and generates a plain-English operator failover checklist with a 1-click Copy Incident Brief exporter.
+A small web app that shows real earthquakes and GitHub and Cloudflare status side by side on a dark map, filtered to the stack you choose. It turns what it sees into a template checklist and a copy-ready incident brief.
 
----
+**Live demo:** https://railway.app (no login, no keys)
+**Built for:** Kiroween 2026, Frankenstein category
+
+## Why Frankenstein
+It stitches together things that don't normally go together: USGS seismic data, Atlassian Statuspage feeds from GitHub and Cloudflare, great-circle distance rules for cloud regions, a Leaflet map, a browser-only "My Stack" filter, and a rule-based runbook generator.
+
+## What it does today
+- Live M4.5+ earthquakes from the past day (USGS), cached for 60 seconds
+- Live GitHub and Cloudflare status (Statuspage), cached for 300 seconds
+- Distance from each quake to six approximate cloud regions, classified "NEARBY (within 300 km)" or "CLEAR"
+- Nearest alternative region by distance, always labeled "health not verified"
+- My Stack: choose your regions and providers; saved only in your browser
+- Template checklist (rule-based, no AI at runtime) and a plain-text incident brief you can copy
+- Simulate: a clearly labeled SIMULATION event near Tokyo for demos. It is a demo input, not real data
+- Stale data is labeled with its last successful fetch time
+
+## What it does not do
+- It does not predict outages or damage. Seismic proximity and provider status are separate signals.
+- It cannot tell you whether any cloud region is operational or degraded beyond fetched status feeds.
+- Region coordinates are approximate, city-level values.
+- Only GitHub and Cloudflare status are included today. No alerts, no accounts.
+
+## Data sources and credits
+USGS Earthquake Hazards feeds; GitHub Status and Cloudflare Status (Atlassian Statuspage); Leaflet 1.9.4; map tiles and data by OpenStreetMap contributors.
+
+## Data integrity rules
+Every number shown comes from a fetched feed or a documented rule. Speculative or unverified status claims are never used. Simulated data and template output are always labeled.
 
 ## Run locally
+python3 -m venv .venv
+.venv/bin/pip install -r requirements.txt
+.venv/bin/uvicorn backend.main:app --port 8000
+Open http://localhost:8000
 
-**Prerequisites:** Python 3.11+
-
-```bash
-git clone https://github.com/your-org/failover-radar-v2.git
-cd failover-radar-v2
-pip install -r requirements.txt
-uvicorn backend.main:app --reload --port 8000
-```
-
-The app is now running at `http://localhost:8000`.
-
-**Smoke-test the API:**
-
-```bash
-# Liveness probe
-curl http://localhost:8000/api/health
-
-# Live radar data
-curl http://localhost:8000/api/radar
-
-# Tokyo M6.8 simulation (safe — clearly prefixed with SIMULATION:)
-curl "http://localhost:8000/api/radar?simulate=true"
-```
-
-**Run the test suite:**
-
-```bash
-pytest backend/tests/
-```
-
----
+## Tests
+.venv/bin/python -m pytest -q
+70 passed. Property-based tests use Hypothesis. Frontend pure functions have 34 passing tests via `node --test frontend/*.test.js`. Tests use saved sample data and no network.
 
 ## Deploy
+A Dockerfile listens on $PORT. Deployed on Railway at https://railway.app.
 
-### Docker
+## How Kiro was used
+Built with Kiro CLI: specs (`requirements.md`, `design.md`, `tasks.md`) in `.kiro/specs/01-failover-radar`, steering files (`product.md`, `tech.md`, `data-integrity.md`) in `.kiro/steering`, scoped permission rules, and property-based tests. See `KIRO_LOG.md` for a task-by-task record. The app has no AI at runtime; AI assisted the build only.
 
-```bash
-docker build -t failover-radar .
-docker run -p 8000:8000 failover-radar
-```
+## Pre-existing code
+Libraries: FastAPI, Uvicorn, HTTPX, Pydantic, pytest, pytest-asyncio, Hypothesis (`requirements.txt`), and Leaflet 1.9.4. No other pre-existing code.
 
-Override the port:
-
-```bash
-docker run -e PORT=9000 -p 9000:9000 failover-radar
-```
-
-### Railway
-
-1. Push this repository to GitHub.
-2. Create a new Railway project and link the repository.
-3. Railway detects the `Dockerfile` automatically and sets `$PORT` at runtime.
-4. Click **Deploy**. The app will be live at your Railway-assigned URL.
-
-```bash
-# Or deploy directly with the Railway CLI
-railway up
-```
-
----
-
-## Simulation mode
-
-Append `?simulate=true` to any `/api/radar` request to inject a fixed M6.8 earthquake offshore Tokyo `(35.30°N, 140.85°E)`. All simulated items are prefixed with `SIMULATION:` throughout the payload and UI so they can never be mistaken for live events.
-
----
-
-## Data sources & attribution
-
-| Source | URL |
-|--------|-----|
-| USGS Earthquake Hazards Program | https://earthquake.usgs.gov/earthquakes/feed/v1.0/summary/4.5_day.geojson |
-| GitHub Status | https://www.githubstatus.com/api/v2/summary.json |
-| Cloudflare Status | https://www.cloudflarestatus.com/api/v2/summary.json |
-| Map tiles | CartoDB Dark Matter — © [CartoDB](https://carto.com/attributions), © [OpenStreetMap](https://www.openstreetmap.org/copyright) contributors |
-
-Haversine distances use Earth radius = 6371.0 km. Regions flagged `NEARBY (within 300 km)` have a great-circle distance ≤ 300 km from the earthquake epicentre.
+## License
+MIT
