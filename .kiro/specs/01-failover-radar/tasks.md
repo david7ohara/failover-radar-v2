@@ -39,8 +39,13 @@
   - Write tests with no network calls: each scenario renders; every number in the output exists in the input; simulated titles start with `SIMULATION:`; stale warning appears; unknown ids return 404; forbidden words are absent from templates and responses; all links are `https` only.
 
 - [ ] **T9: Copy Incident Brief**
-  - In `frontend/app.js` generate the Markdown incident brief with UTC timestamp, `SIMULATION:` prefix when simulated, exact Haversine kilometres, `"nearby"` phrasing (never `"affected"`), provider statuses, checklist steps, and clickable USGS/Statuspage URLs.
-  - Add the Copy Incident Brief button (`navigator.clipboard.writeText`) and a visible, selectable `<textarea>` fallback.
+  - Create `frontend/brief.js` exporting a pure function `buildBrief(radarData, checklists, stackSelection, options)` that returns a plain-text string (no Markdown headings or tables). All values come from the passed-in arguments; nothing is invented.
+  - Brief layout: first line is `SIMULATION: ...` when simulating, otherwise "Failover Radar status snapshot"; "As of [generated_at_utc]"; stack summary ("Your stack: N regions, N providers" or "Stack: all regions and providers"); nearby quakes sorted closest first (at most 5, each with event id, magnitude, UTC time, place, region label, distance_km, `NEARBY (within 300 km)`, USGS https link; "and N more" when further quakes exist); provider status (name, indicator, description, fetched time, status page https link, degraded components); stale warnings with `last_success`; template checklist labeled "Template checklist" for the first nearby region or degraded provider; closing lines "Nearest alternative by distance (health not verified). Verify before shifting traffic." and "Seismic proximity and provider status are separate signals. Data from USGS, GitHub Status and Cloudflare Status."
+  - All-clear case: "No nearby quake and no degraded provider in the data fetched at [time]. This does not guarantee nothing is wrong."
+  - Wording rules: use "nearby"; never use "affected", "impacted", "healthy", "unhealthy", "caused", or "outage confirmed"; all links `https` only.
+  - Add a "Copy incident brief" button (at least 44 px tall) and a visible read-only `<textarea>` to `index.html`; wire them in `app.js`. Set textarea content via `.value` only, never `innerHTML`. On tap: try `navigator.clipboard.writeText` in `try/catch`; on failure select the textarea and try `document.execCommand("copy")`; if that also fails show "Tap and hold the text, then Copy." Show a short "Copied" or fallback message after each attempt.
+  - The brief updates whenever data, stack selection, or simulation state changes. The brief and selection are never sent to the server.
+  - Write tests using `node --test` on `buildBrief` covering: SIMULATION prefix, all-clear case, stale warning, forbidden words absent, all numbers present in input data, https links only, "and N more" count accuracy.
 
 - [ ] **T10: README & Kiro Write-Up**
   - Write a judge-ready `README.md` covering setup, local run, Railway deploy, simulation mode, and data sources with attribution.

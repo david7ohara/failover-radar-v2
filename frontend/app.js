@@ -17,6 +17,7 @@
 
 let simulate  = false;
 let lastData  = null;   // last successful /api/radar payload
+let lastChecklists = []; // last fetched checklist objects (for the brief)
 
 // stackState is populated by initMyStack() after the first fetch.
 // Shape: { regions: Set<string>, providers: Set<string>, persisted: boolean }
@@ -79,6 +80,11 @@ const cloudflareLastUpdated = document.getElementById('cloudflare-last-updated')
 const cloudflareDescription = document.getElementById('cloudflare-description');
 const cloudflareComponents  = document.getElementById('cloudflare-components');
 const cloudflareIncidents   = document.getElementById('cloudflare-incidents');
+
+// Brief panel
+const briefTextarea  = document.getElementById('brief-textarea');
+const btnCopyBrief   = document.getElementById('btn-copy-brief');
+const briefCopyMsg   = document.getElementById('brief-copy-msg');
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -327,6 +333,8 @@ function applyMyStack(data) {
   renderProviderPanelVisibility();
   // Redraw failover lines filtered to selected NEARBY regions only
   renderFilteredFailoverLines(data);
+  // Rebuild brief immediately on selection change (checklists update async below)
+  rebuildBrief();
   // Rebuild checklist panel (async — fires and doesn't block the render)
   refreshChecklist(data);
 }
@@ -610,6 +618,10 @@ async function fetchRadar() {
     }
 
     renderAll(data);
+    // applyMyStack calls refreshChecklist which rebuilds the brief after
+    // checklists are fetched.  Also rebuild immediately so the brief shows
+    // the latest data while checklists are loading.
+    rebuildBrief();
     applyMyStack(data);
   } catch (_) {
     updateError.hidden = false;
@@ -745,6 +757,7 @@ async function fetchAndAppendChecklist(params) {
     const r = await fetch('/api/checklist?' + qs.toString());
     if (!r.ok) return;   // 404 or other — silently skip
     const data = await r.json();
+    lastChecklists.push(data);
     checklistCards.appendChild(buildChecklistCard(data));
   } catch (_) {
     // Network error — silently skip; the main update-error banner already shows
@@ -796,10 +809,83 @@ async function refreshChecklist(data) {
   // left hidden if a fetch silently fails.
   checklistPanel.hidden = false;
 
+  // Collect fetched checklist objects for the brief
+  lastChecklists = [];
+
   for (const params of requests) {
     await fetchAndAppendChecklist(params);
   }
+
+  // Rebuild brief with updated checklists
+  rebuildBrief();
 }
+
+// ─── Incident Brief ───────────────────────────────────────────────────────────
+
+/**
+ * Rebuild the brief textarea from current state.
+ * Called whenever data, stack selection, or simulation changes.
+ * Never sends data to the server — brief.js is a pure local function.
+ */
+function rebuildBrief() {
+  if (!lastData || typeof BriefBuilder === 'undefined') return;
+
+  // Build a plain stackSelection object from the current Sets (or null if
+  // stackState hasn't been initialised yet, meaning all regions/providers).
+  const stackSelection = stackState
+    ? { regions: [...stackState.regions], providers: [...stackState.providers] }
+    : null;
+
+  const text = BriefBuilder.buildBrief(
+    lastData,
+    lastChecklists,
+    stackSelection,
+    { simulate }
+  );
+
+  // Set via .value only — never innerHTML
+  briefTextarea.value = text;
+}
+
+/** Show a short feedback message next to the copy button. */
+function showCopyMsg(msg, isWarn) {
+  briefCopyMsg.textContent = msg;
+  briefCopyMsg.className   = 'brief-copy-msg' + (isWarn ? ' brief-copy-msg--warn' : '');
+  briefCopyMsg.hidden      = false;
+  setTimeout(() => { briefCopyMsg.hidden = true; }, 3000);
+}
+
+/**
+ * Copy handler: three-stage fallback chain.
+ *   1. navigator.clipboard.writeText  (modern — async, requires HTTPS or localhost)
+ *   2. textarea select + document.execCommand('copy')  (legacy Safari)
+ *   3. Instruct user to tap-and-hold
+ */
+btnCopyBrief.addEventListener('click', async () => {
+  const text = briefTextarea.value;
+  if (!text) return;
+
+  try {
+    await navigator.clipboard.writeText(text);
+    showCopyMsg('Copied', false);
+    return;
+  } catch (_) {
+    // clipboard API unavailable or denied — fall through
+  }
+
+  // Stage 2: select + execCommand
+  briefTextarea.select();
+  briefTextarea.setSelectionRange(0, 99999);
+  try {
+    const ok = document.execCommand('copy');
+    if (ok) { showCopyMsg('Copied', false); return; }
+  } catch (_) {
+    // execCommand also failed — fall through
+  }
+
+  // Stage 3: manual instruction
+  showCopyMsg('Tap and hold the text, then Copy.', true);
+});
 
 // ─── Bootstrap ────────────────────────────────────────────────────────────────
 

@@ -9,6 +9,6 @@
   - `backend/main.py`: FastAPI routes (`GET /api/health`, `GET /api/radar?simulate=false`, `GET /api/checklist?region_id=...&event_id=...&provider=...&simulate=false`) and static file mounting for `/`.
   - `backend/tests/test_geo.py`: `pytest` + `hypothesis` property-based tests (no network calls; use saved sample fixtures).
 - **Frontend (`frontend/`):**
-  - `frontend/index.html`: Tactical dark-mode command center (Header + Simulate toggle + My Stack drawer, 60% Leaflet Map pane, 40% Incident Triage + AI Checklist + Copy Incident Brief pane).
+  - `frontend/index.html`: Tactical dark-mode command center (Header + Simulate toggle + My Stack drawer, 60% Leaflet Map pane, 40% Incident Triage + Template Checklist + Copy Incident Brief pane).
   - `frontend/styles.css`: Responsive CSS Grid/Flexbox dark theme (`#0b0f17` background, `#ef4444` nearby alert, `#10b981` clear status) optimized for both desktop browsers and iPhone Safari.
   - `frontend/app.js`: State manager, `localStorage` My Stack persistence (with in-memory fallback when storage is blocked), Leaflet markers/circles/polylines, API polling, and Incident Brief formatter with Copy button + selectable `<textarea>`.

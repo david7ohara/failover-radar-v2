@@ -182,7 +182,30 @@
     </div>
   </section>
 
+  <!-- ═══════════════════════════════════════════════════════════════════
+       INCIDENT BRIEF PANEL
+  ═══════════════════════════════════════════════════════════════════ -->
+  <section id="brief-panel" class="brief-panel" aria-label="Incident brief">
+    <div class="brief-panel-inner">
+      <div class="brief-panel-header">
+        <h2 class="brief-panel-heading">Incident Brief</h2>
+        <button id="btn-copy-brief" class="btn btn-copy-brief" type="button" aria-label="Copy incident brief">
+          Copy incident brief
+        </button>
+        <span id="brief-copy-msg" class="brief-copy-msg" aria-live="polite" hidden></span>
+      </div>
+      <textarea
+        id="brief-textarea"
+        class="brief-textarea"
+        readonly
+        aria-label="Incident brief text — select all and copy if button fails"
+        spellcheck="false"
+      ></textarea>
+    </div>
+  </section>
+
   <script src="/stack.js"></script>
+  <script src="/brief.js"></script>
   <script src="/app.js"></script>
 </body>
 </html>
