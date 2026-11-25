@@ -15,7 +15,7 @@
 | **T10 audit & docs** | Verified `70` pytest + `34` node tests and finalized `README.md` & `KIRO_LOG.md` | Removed an unsupported `.kiro/hooks` claim during the audit; a test-on-save hook (`.kiro/hooks/run-tests.json`) has since been added, so hooks are now used | Manual audit + `pytest` + `node --test` | 0.0 |
 
 ## Kiro CLI Notes
-Hooks: `.kiro/hooks/run-tests.json` is a PostFileSave command hook that runs the backend tests after Kiro edits backend Python files. 
+Hooks: `.kiro/hooks/run-tests.json` is a PostFileSave command hook that runs the backend tests after Kiro edits backend Python files. Observed: after Kiro edited backend/geo.py, no hook output appeared, so I could not confirm the hook fires in the CLI. The hook file is committed in .kiro/hooks/.
 I also tried a wording-guard hook. A manual test showed it flagged comments and test files that list the banned words, so I removed it. Wording is enforced by tests instead.
 
 - **What worked well:** Running Kiro CLI in a two-step **Plan -> Audit against `.kiro/steering/` -> Approve** workflow kept every file edit small, predictable, and 100% aligned with data-integrity rules. Starting fresh `kiro-cli chat` sessions (`0%` context) per task prevented context bloat and saved credits.
