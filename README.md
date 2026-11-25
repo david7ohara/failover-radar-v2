@@ -45,6 +45,7 @@ A Dockerfile listens on $PORT. Deployed on Railway at https://railway.app.
 
 ## How Kiro was used
 Built with Kiro CLI: specs (`requirements.md`, `design.md`, `tasks.md`) in `.kiro/specs/01-failover-radar`, steering files (`product.md`, `tech.md`, `data-integrity.md`) in `.kiro/steering`, scoped permission rules, and property-based tests. See `KIRO_LOG.md` for a task-by-task record. The app has no AI at runtime; AI assisted the build only.
+Hooks: a PostFileSave command hook in .kiro/hooks/run-tests.json runs the backend tests after Kiro edits backend Python files.
 
 ## Pre-existing code
 Libraries: FastAPI, Uvicorn, HTTPX, Pydantic, pytest, pytest-asyncio, Hypothesis (`requirements.txt`), and Leaflet 1.9.4. No other pre-existing code.
