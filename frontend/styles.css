@@ -825,3 +825,138 @@ details[open] .panel-details-toggle {
     font-size: 11px;
   }
 }
+
+/* ── Candidate 3: ProtonVPN Carbon & Iris Command UI ─────────────────────── */
+:root {
+  --bg: #131118;
+  --bg-panel: rgba(27, 24, 36, 0.9);
+  --bg-header: rgba(19, 17, 24, 0.94);
+  --border: rgba(255, 255, 255, 0.085);
+  --text: #f6f5f9;
+  --text-muted: #a39eb5;
+  --accent: #6d4aff;
+  --nearby: #ec5858;
+  --clear: #1ea885;
+  --warn: #f59e0b;
+  --radius: 14px;
+}
+
+body {
+  background:
+    radial-gradient(circle at 12% 0%, rgba(109, 74, 255, 0.16), transparent 44%),
+    radial-gradient(circle at 88% 12%, rgba(30, 168, 133, 0.08), transparent 40%),
+    #131118;
+  font-variant-numeric: tabular-nums;
+}
+
+.app-header {
+  backdrop-filter: blur(18px);
+  -webkit-backdrop-filter: blur(18px);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  box-shadow: 0 6px 28px rgba(0, 0, 0, 0.5);
+}
+
+.radar-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 34px;
+  height: 34px;
+  border-radius: 10px;
+  background: rgba(109, 74, 255, 0.18);
+  border: 1px solid rgba(109, 74, 255, 0.38);
+  box-shadow: 0 0 18px rgba(109, 74, 255, 0.25);
+}
+
+.sim-banner {
+  background: linear-gradient(90deg, #4c28e5 0%, #6d4aff 50%, #8b6eff 100%);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.18);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  box-shadow: 0 4px 22px rgba(109, 74, 255, 0.38);
+}
+
+/* Proton pill buttons with tactile inner specular highlight */
+.btn {
+  border-radius: 9999px;
+  font-weight: 600;
+  letter-spacing: 0.01em;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.18), 0 4px 14px rgba(0, 0, 0, 0.32);
+}
+
+.btn-stack,
+.btn-copy-brief {
+  background: #6d4aff;
+  border-color: rgba(255, 255, 255, 0.14);
+  color: #ffffff;
+}
+.btn-stack:hover,
+.btn-copy-brief:hover,
+.btn-stack[aria-expanded="true"] {
+  background: #7c5cff;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.24), 0 0 22px rgba(109, 74, 255, 0.48);
+}
+
+.btn-warn {
+  background: #ec5858;
+  border-color: rgba(255, 255, 255, 0.14);
+}
+.btn-warn:hover {
+  background: #f26b6b;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.24), 0 0 20px rgba(236, 88, 88, 0.42);
+}
+
+.btn-clear {
+  background: #1ea885;
+  border-color: rgba(255, 255, 255, 0.16);
+  color: #ffffff;
+}
+.btn-clear:hover {
+  background: #24be97;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.24), 0 0 20px rgba(30, 168, 133, 0.42);
+}
+
+/* Floating Carbon HUD cards & scannable rows */
+.panel,
+.checklist-card {
+  background: var(--bg-panel);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  box-shadow: 0 8px 28px rgba(0, 0, 0, 0.36);
+}
+.panel:hover {
+  background: rgba(37, 33, 50, 0.94);
+  border-color: rgba(255, 255, 255, 0.14);
+}
+
+.component-item {
+  padding: 5px 8px;
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.03);
+}
+
+.mystack-drawer {
+  background: rgba(21, 18, 30, 0.97);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border-color: rgba(255, 255, 255, 0.12);
+}
+
+/* Dark violet-slate radar map & controls */
+.leaflet-tile-pane {
+  filter: invert(100%) hue-rotate(228deg) brightness(83%) contrast(120%) saturate(128%);
+}
+.leaflet-control-zoom a {
+  background: #1b1824 !important;
+  color: #f6f5f9 !important;
+  border-color: rgba(255, 255, 255, 0.12) !important;
+}
+.leaflet-control-attribution {
+  background: rgba(19, 17, 24, 0.85) !important;
+  color: #a39eb5 !important;
+}
+.leaflet-control-attribution a {
+  color: #9c84ff !important;
+}
