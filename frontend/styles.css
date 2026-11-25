@@ -825,7 +825,6 @@ details[open] .panel-details-toggle {
     font-size: 11px;
   }
 }
-
 /* ── Candidate 3: ProtonVPN Carbon & Iris Command UI ─────────────────────── */
 :root {
   --bg: #131118;
@@ -960,3 +959,4 @@ body {
 .leaflet-control-attribution a {
   color: #9c84ff !important;
 }
+
