@@ -76,7 +76,7 @@
   scene.add(blueFill);
 
   // ------------------------------------------------------------
-  // STARFIELD — positioned behind the Earth
+  // STARFIELD
   // ------------------------------------------------------------
 
   function createStarfield() {
@@ -102,6 +102,7 @@
     }
 
     const geometry = new THREE.BufferGeometry();
+
     geometry.setAttribute(
       'position',
       new THREE.BufferAttribute(positions, 3)
@@ -207,8 +208,6 @@
 
   root.add(earth);
 
-  // A real Earth image is used when available.
-  // The fallback texture remains if the image cannot load.
   const textureLoader = new THREE.TextureLoader();
   textureLoader.setCrossOrigin('anonymous');
 
@@ -234,7 +233,7 @@
   );
 
   // ------------------------------------------------------------
-  // THIN ATMOSPHERIC RIM — no thick glowing shell
+  // ATMOSPHERE
   // ------------------------------------------------------------
 
   const atmosphere = new THREE.Mesh(
@@ -487,12 +486,13 @@
 
   // ------------------------------------------------------------
   // SIMULATION CAMERA FOCUS
+  // Focus on the midpoint between source and destination.
   // ------------------------------------------------------------
 
   let targetQuaternion = new THREE.Quaternion();
   let lastFocusKey = '';
 
-  function focusOnRegion(region) {
+  function focusOnRegion(region, alternative) {
     if (
       !region ||
       typeof region.lat !== 'number' ||
@@ -500,23 +500,54 @@
     ) return;
 
     const key = String(region.id || '') +
-      ':' + region.lat + ':' + region.lon;
+      ':' + region.lat + ':' + region.lon +
+      ':' + (alternative ? alternative.id : '');
 
     if (key === lastFocusKey) return;
     lastFocusKey = key;
 
-    const direction = latLonToVector(
+    const sourceDirection = latLonToVector(
       region.lat,
       region.lon,
       1
     ).normalize();
 
+    let focusDirection = sourceDirection.clone();
+
+    if (
+      alternative &&
+      typeof alternative.lat === 'number' &&
+      typeof alternative.lon === 'number'
+    ) {
+      const destinationDirection = latLonToVector(
+        alternative.lat,
+        alternative.lon,
+        1
+      ).normalize();
+
+      const midpoint = sourceDirection
+        .clone()
+        .add(destinationDirection);
+
+      if (midpoint.lengthSq() > 0.0001) {
+        focusDirection = midpoint.normalize();
+      }
+    }
+
     const cameraDirection = new THREE.Vector3(0, 0, 1);
 
     targetQuaternion.setFromUnitVectors(
-      direction,
+      focusDirection,
       cameraDirection
     );
+
+    // Slight rightward adjustment to the simulation view.
+    const rightTurn = new THREE.Quaternion().setFromAxisAngle(
+      new THREE.Vector3(0, 1, 0),
+      0.10
+    );
+
+    targetQuaternion.premultiply(rightTurn);
   }
 
   // ------------------------------------------------------------
@@ -596,9 +627,13 @@
 
     const focusRegion = selectedNearby || activeNearby;
 
-    // Only redirect the camera when a new simulation/alert target appears.
+    const focusAlternative = focusRegion &&
+      focusRegion.nearest_alternative
+      ? regionById.get(focusRegion.nearest_alternative.id)
+      : null;
+
     if (simulated && focusRegion) {
-      focusOnRegion(focusRegion);
+      focusOnRegion(focusRegion, focusAlternative);
     } else if (!simulated) {
       lastFocusKey = '';
     }
@@ -721,8 +756,6 @@
 
     idleTime += delta;
 
-    // Slow automatic rotation when the user is not interacting.
-    // Do not fight the simulation camera movement.
     if (!dragging && idleTime > 3 && !lastFocusKey) {
       const idleRotation = new THREE.Quaternion().setFromAxisAngle(
         new THREE.Vector3(0, 1, 0),
@@ -732,7 +765,6 @@
       targetQuaternion.multiply(idleRotation);
     }
 
-    // Smooth camera orientation.
     const smooth = 1 - Math.exp(-delta * 4.2);
     root.quaternion.slerp(targetQuaternion, smooth);
 
@@ -758,7 +790,6 @@
       }
     });
 
-    // Very subtle starfield drift.
     stars.rotation.y += delta * 0.002;
 
     renderer.render(scene, camera);
