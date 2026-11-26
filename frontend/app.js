@@ -1,121 +1,114 @@
+
 /**
  * app.js — Failover Radar frontend
  *
- * Rules enforced here:
- *   - All numbers come from /api/radar.  Zero invented values.
- *   - Feed-derived text written via textContent only, never innerHTML.
- *   - All URLs are relative (/api/radar).
- *   - Radius of proximity circles comes from threshold_km in the API response.
- *   - "nearby" phrasing only — never "affected".
- *   - My Stack selection is never sent to the server; it filters display only.
- *   - Pure My Stack logic lives in stack.js (window.MyStack).
+ * Frontend-only map integration:
+ *   - /api/radar remains unchanged.
+ *   - /api/checklist remains unchanged.
+ *   - My Stack stays local to this browser.
+ *   - Three.js globe receives the same radar data as the dashboard.
+ *   - No backend logic or API contract is changed.
  */
 
 'use strict';
 
-// ─── State ────────────────────────────────────────────────────────────────────
+// ─── State ───────────────────────────────────────────────────────────────────
 
-let simulate  = false;
-let lastData  = null;   // last successful /api/radar payload
-let lastChecklists = []; // last fetched checklist objects (for the brief)
-
-// stackState is populated by initMyStack() after the first fetch.
-// Shape: { regions: Set<string>, providers: Set<string>, persisted: boolean }
+let simulate = false;
+let lastData = null;
+let lastChecklists = [];
 let stackState = null;
 
-// ─── Map initialisation ───────────────────────────────────────────────────────
+// ─── DOM references ─────────────────────────────────────────────────────────
 
-const map = L.map('map', { zoomControl: true, worldCopyJump: false }).setView([20, 10], 1.5);
-
-L.tileLayer(
-  'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
-  {
-    attribution:
-      '© <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener noreferrer">OpenStreetMap contributors</a>',
-    noWrap: true,
-    maxZoom: 19,
-  }
-).addTo(map);
-
-// Layer groups — cleared and rebuilt on every successful fetch
-const quakeLayer  = L.layerGroup().addTo(map);
-const regionLayer = L.layerGroup().addTo(map);
-const circleLayer = L.layerGroup().addTo(map);
-const lineLayer   = L.layerGroup().addTo(map);
-
-// ─── DOM references ───────────────────────────────────────────────────────────
-
-const simBanner    = document.getElementById('sim-banner');
-const btnSimulate  = document.getElementById('btn-simulate');
-const btnClear     = document.getElementById('btn-clear');
-const updateError  = document.getElementById('update-error');
+const simBanner = document.getElementById('sim-banner');
+const btnSimulate = document.getElementById('btn-simulate');
+const btnClear = document.getElementById('btn-clear');
+const updateError = document.getElementById('update-error');
 
 // My Stack drawer
-const drawer        = document.getElementById('mystack-drawer');
-const scrim         = document.getElementById('mystack-scrim');
-const btnMyStack    = document.getElementById('btn-mystack');
-const btnClose      = document.getElementById('btn-mystack-close');
-const regionList    = document.getElementById('mystack-region-list');
-const providerList  = document.getElementById('mystack-provider-list');
+const drawer = document.getElementById('mystack-drawer');
+const scrim = document.getElementById('mystack-scrim');
+const btnMyStack = document.getElementById('btn-mystack');
+const btnClose = document.getElementById('btn-mystack-close');
+const regionList = document.getElementById('mystack-region-list');
+const providerList = document.getElementById('mystack-provider-list');
 const mystackBanner = document.getElementById('mystack-banner');
 const mystackAdvice = document.getElementById('mystack-advice');
 
 // USGS panel
-const staleUsgs       = document.getElementById('stale-usgs');
+const staleUsgs = document.getElementById('stale-usgs');
 const usgsLastUpdated = document.getElementById('usgs-last-updated');
-const usgsCount       = document.getElementById('usgs-count');
+const usgsCount = document.getElementById('usgs-count');
 
 // GitHub panel
-const staleGithub       = document.getElementById('stale-github');
-const githubSource      = document.getElementById('github-source');
+const staleGithub = document.getElementById('stale-github');
+const githubSource = document.getElementById('github-source');
 const githubLastUpdated = document.getElementById('github-last-updated');
 const githubDescription = document.getElementById('github-description');
-const githubComponents  = document.getElementById('github-components');
-const githubIncidents   = document.getElementById('github-incidents');
+const githubComponents = document.getElementById('github-components');
+const githubIncidents = document.getElementById('github-incidents');
 
 // Cloudflare panel
-const staleCloudflare       = document.getElementById('stale-cloudflare');
-const cloudflareSource      = document.getElementById('cloudflare-source');
+const staleCloudflare = document.getElementById('stale-cloudflare');
+const cloudflareSource = document.getElementById('cloudflare-source');
 const cloudflareLastUpdated = document.getElementById('cloudflare-last-updated');
 const cloudflareDescription = document.getElementById('cloudflare-description');
-const cloudflareComponents  = document.getElementById('cloudflare-components');
-const cloudflareIncidents   = document.getElementById('cloudflare-incidents');
+const cloudflareComponents = document.getElementById('cloudflare-components');
+const cloudflareIncidents = document.getElementById('cloudflare-incidents');
 
-// Brief panel
-const briefTextarea  = document.getElementById('brief-textarea');
-const btnCopyBrief   = document.getElementById('btn-copy-brief');
-const briefCopyMsg   = document.getElementById('brief-copy-msg');
+// Checklist panel
+const checklistPanel = document.getElementById('checklist-panel');
+const checklistCards = document.getElementById('checklist-cards');
 
-// ─── Helpers ──────────────────────────────────────────────────────────────────
+// Incident Brief
+const briefTextarea = document.getElementById('brief-textarea');
+const btnCopyBrief = document.getElementById('btn-copy-brief');
+const briefCopyMsg = document.getElementById('brief-copy-msg');
+
+// ─── Helpers ─────────────────────────────────────────────────────────────────
 
 function fmtUtc(isoStr) {
   if (!isoStr) return 'unknown';
-  try { return new Date(isoStr).toUTCString(); } catch (_) { return isoStr; }
+
+  try {
+    return new Date(isoStr).toUTCString();
+  } catch (_) {
+    return String(isoStr);
+  }
 }
 
 function statusClass(status) {
-  const known = ['operational', 'degraded_performance', 'partial_outage', 'major_outage'];
+  const known = [
+    'operational',
+    'degraded_performance',
+    'partial_outage',
+    'major_outage'
+  ];
+
   return known.includes(status) ? status : 'unknown';
 }
 
 function statusLabel(status) {
   const labels = {
-    operational:          'Operational',
+    operational: 'Operational',
     degraded_performance: 'Degraded',
-    partial_outage:       'Partial outage',
-    major_outage:         'Major outage',
+    partial_outage: 'Partial outage',
+    major_outage: 'Major outage'
   };
-  return labels[status] ?? status;
+
+  return labels[status] || status || 'Unknown';
 }
 
-function setText(el, text) {
-  el.textContent = text;
+function setText(element, value) {
+  if (element) element.textContent = value;
 }
 
-// ─── My Stack drawer ──────────────────────────────────────────────────────────
+// ─── My Stack drawer ─────────────────────────────────────────────────────────
 
 function openDrawer() {
   drawer.hidden = false;
+  scrim.hidden = false;
   scrim.classList.add('is-open');
   btnMyStack.setAttribute('aria-expanded', 'true');
 }
@@ -123,68 +116,81 @@ function openDrawer() {
 function closeDrawer() {
   drawer.hidden = true;
   scrim.classList.remove('is-open');
+  scrim.hidden = true;
   btnMyStack.setAttribute('aria-expanded', 'false');
 }
 
-btnMyStack.addEventListener('click', () => {
-  drawer.hidden ? openDrawer() : closeDrawer();
+btnMyStack.addEventListener('click', function () {
+  if (drawer.hidden) {
+    openDrawer();
+  } else {
+    closeDrawer();
+  }
 });
+
 btnClose.addEventListener('click', closeDrawer);
 scrim.addEventListener('click', closeDrawer);
 
 // ─── My Stack initialisation ──────────────────────────────────────────────────
 
-/**
- * Build checkboxes for regions and providers.
- * Called once after the first successful /api/radar fetch.
- * Idempotent — the data-built guard prevents rebuilding on subsequent polls.
- */
 function initMyStack(data) {
-  const knownRegionIds   = data.regions.map(r => r.id);
-  const knownProviderIds = (data.providers || []).map(p => p.provider);
+  const knownRegionIds = data.regions.map(function (region) {
+    return region.id;
+  });
 
-  // Load persisted state (or defaults) from stack.js
+  const knownProviderIds = (data.providers || []).map(function (provider) {
+    return provider.provider;
+  });
+
   stackState = MyStack.load(knownRegionIds, knownProviderIds);
 
-  // ── Region checkboxes ────────────────────────────────────────────────────
+  // Region checkboxes
   if (regionList.dataset.built !== 'true') {
-    while (regionList.firstChild) regionList.removeChild(regionList.firstChild);
+    while (regionList.firstChild) {
+      regionList.removeChild(regionList.firstChild);
+    }
 
     for (const region of data.regions) {
       const label = document.createElement('label');
       label.className = 'mystack-label';
       label.dataset.regionId = region.id;
 
-      const cb = document.createElement('input');
-      cb.type      = 'checkbox';
-      cb.className = 'mystack-cb';
-      cb.dataset.kind = 'region';
-      cb.dataset.id   = region.id;
-      cb.checked = stackState.regions.has(region.id);
+      const checkbox = document.createElement('input');
+      checkbox.type = 'checkbox';
+      checkbox.className = 'mystack-cb';
+      checkbox.dataset.kind = 'region';
+      checkbox.dataset.id = region.id;
+      checkbox.checked = stackState.regions.has(region.id);
 
-      cb.addEventListener('change', () => {
-        if (cb.checked) {
+      checkbox.addEventListener('change', function () {
+        if (checkbox.checked) {
           stackState.regions.add(region.id);
         } else {
           stackState.regions.delete(region.id);
         }
+
         const saved = MyStack.save(stackState);
         if (saved) stackState.persisted = true;
+
         applyMyStack(lastData);
       });
 
-      const text = document.createTextNode(region.label + '\u00a0(' + region.id + ')');
-      label.appendChild(cb);
-      label.appendChild(text);
+      label.appendChild(checkbox);
+      label.appendChild(
+        document.createTextNode(region.label + '\u00a0(' + region.id + ')')
+      );
+
       regionList.appendChild(label);
     }
 
     regionList.dataset.built = 'true';
   }
 
-  // ── Provider checkboxes ──────────────────────────────────────────────────
+  // Provider checkboxes
   if (providerList.dataset.built !== 'true') {
-    while (providerList.firstChild) providerList.removeChild(providerList.firstChild);
+    while (providerList.firstChild) {
+      providerList.removeChild(providerList.firstChild);
+    }
 
     for (const provider of (data.providers || [])) {
       const name = provider.provider;
@@ -193,27 +199,28 @@ function initMyStack(data) {
       label.className = 'mystack-label';
       label.dataset.providerId = name;
 
-      const cb = document.createElement('input');
-      cb.type      = 'checkbox';
-      cb.className = 'mystack-cb';
-      cb.dataset.kind = 'provider';
-      cb.dataset.id   = name;
-      cb.checked = stackState.providers.has(name);
+      const checkbox = document.createElement('input');
+      checkbox.type = 'checkbox';
+      checkbox.className = 'mystack-cb';
+      checkbox.dataset.kind = 'provider';
+      checkbox.dataset.id = name;
+      checkbox.checked = stackState.providers.has(name);
 
-      cb.addEventListener('change', () => {
-        if (cb.checked) {
+      checkbox.addEventListener('change', function () {
+        if (checkbox.checked) {
           stackState.providers.add(name);
         } else {
           stackState.providers.delete(name);
         }
+
         const saved = MyStack.save(stackState);
         if (saved) stackState.persisted = true;
+
         applyMyStack(lastData);
       });
 
-      const text = document.createTextNode(name);
-      label.appendChild(cb);
-      label.appendChild(text);
+      label.appendChild(checkbox);
+      label.appendChild(document.createTextNode(name));
       providerList.appendChild(label);
     }
 
@@ -221,63 +228,59 @@ function initMyStack(data) {
   }
 }
 
-// ─── My Stack rendering ───────────────────────────────────────────────────────
+// ─── My Stack rendering ──────────────────────────────────────────────────────
 
-/**
- * Dim unselected region/provider rows; bring selected ones to full opacity.
- * Selected items appear first within each fieldset.
- */
 function applyCheckboxDimming() {
   if (!stackState) return;
 
-  // Region labels
-  regionList.querySelectorAll('label[data-region-id]').forEach(label => {
-    const id       = label.dataset.regionId;
-    const selected = stackState.regions.has(id);
+  regionList.querySelectorAll('label[data-region-id]').forEach(function (label) {
+    const selected = stackState.regions.has(label.dataset.regionId);
     label.classList.toggle('mystack-label--dim', !selected);
   });
 
-  // Provider labels
-  providerList.querySelectorAll('label[data-provider-id]').forEach(label => {
-    const id       = label.dataset.providerId;
-    const selected = stackState.providers.has(id);
+  providerList.querySelectorAll('label[data-provider-id]').forEach(function (label) {
+    const selected = stackState.providers.has(label.dataset.providerId);
     label.classList.toggle('mystack-label--dim', !selected);
   });
 }
 
-/**
- * Render the summary banner using MyStack.bannerText().
- */
 function renderBanner(data) {
   if (!stackState) return;
+
   const text = MyStack.bannerText(stackState, data, simulate);
 
-  while (mystackBanner.firstChild) mystackBanner.removeChild(mystackBanner.firstChild);
+  while (mystackBanner.firstChild) {
+    mystackBanner.removeChild(mystackBanner.firstChild);
+  }
+
   mystackBanner.appendChild(document.createTextNode(text));
 
   const hasNearby = MyStack.nearbySelected(stackState, data).length > 0;
-  mystackBanner.className = 'mystack-banner' +
-    (simulate   ? ' mystack-banner--sim'    : '') +
-    (hasNearby  ? ' mystack-banner--nearby' : '');
+
+  mystackBanner.className =
+    'mystack-banner' +
+    (simulate ? ' mystack-banner--sim' : '') +
+    (hasNearby ? ' mystack-banner--nearby' : '');
 }
 
-/**
- * Render per-region failover advice for selected NEARBY regions.
- */
 function renderAdvice(data) {
   if (!stackState) return;
 
   const nearby = MyStack.nearbySelected(stackState, data);
-  while (mystackAdvice.firstChild) mystackAdvice.removeChild(mystackAdvice.firstChild);
+
+  while (mystackAdvice.firstChild) {
+    mystackAdvice.removeChild(mystackAdvice.firstChild);
+  }
 
   if (nearby.length === 0) {
     mystackAdvice.hidden = true;
     return;
   }
 
-  // Build a region id → region lookup for alt-region labels
   const byId = {};
-  for (const r of data.regions) byId[r.id] = r;
+  for (const region of data.regions) {
+    byId[region.id] = region;
+  }
 
   mystackAdvice.hidden = false;
 
@@ -288,22 +291,26 @@ function renderAdvice(data) {
     const regionSpan = document.createElement('span');
     regionSpan.className = 'advice-region';
     regionSpan.textContent = region.label;
+
     item.appendChild(regionSpan);
     item.appendChild(document.createTextNode(' is nearby a quake.'));
 
     if (region.nearest_alternative) {
-      const altId    = region.nearest_alternative.id;
+      const altId = region.nearest_alternative.id;
       const altRegion = byId[altId];
-      const altLabel  = altRegion
+
+      const altLabel = altRegion
         ? altRegion.label
-        : (region.nearest_alternative.label ?? altId);
+        : (region.nearest_alternative.label || altId);
 
       item.appendChild(document.createElement('br'));
+
       const note = document.createElement('span');
       note.className = 'advice-alt';
       note.textContent =
         'Nearest alternative: ' + altLabel +
-        ' \u2014 Nearest alternative by distance (health not verified).';
+        ' — Nearest alternative by distance (health not verified).';
+
       item.appendChild(note);
     }
 
@@ -311,316 +318,202 @@ function renderAdvice(data) {
   }
 }
 
-/**
- * Show/hide the GitHub and Cloudflare sidebar panels based on selection.
- */
 function renderProviderPanelVisibility() {
   if (!stackState) return;
-  const panelGithub     = document.getElementById('panel-github');
+
+  const panelGithub = document.getElementById('panel-github');
   const panelCloudflare = document.getElementById('panel-cloudflare');
-  if (panelGithub)     panelGithub.hidden     = !stackState.providers.has('GitHub');
-  if (panelCloudflare) panelCloudflare.hidden = !stackState.providers.has('Cloudflare');
+
+  if (panelGithub) {
+    panelGithub.hidden = !stackState.providers.has('GitHub');
+  }
+
+  if (panelCloudflare) {
+    panelCloudflare.hidden = !stackState.providers.has('Cloudflare');
+  }
 }
 
 /**
- * Run all My Stack display updates after any state or data change.
+ * Update the globe from the same data used by the dashboard.
+ * My Stack selection affects displayed region markers and routes only.
  */
+function updateGlobe(data) {
+  if (
+    window.FailoverGlobe &&
+    typeof window.FailoverGlobe.update === 'function'
+  ) {
+    window.FailoverGlobe.update(data, stackState, simulate);
+  }
+}
+
 function applyMyStack(data) {
   if (!data) return;
+
   applyCheckboxDimming();
   renderBanner(data);
   renderAdvice(data);
   renderProviderPanelVisibility();
-  // Redraw failover lines filtered to selected NEARBY regions only
-  renderFilteredFailoverLines(data);
-  // Rebuild brief immediately on selection change (checklists update async below)
+
+  updateGlobe(data);
   rebuildBrief();
-  // Rebuild checklist panel (async — fires and doesn't block the render)
   refreshChecklist(data);
 }
 
-// ─── Map rendering ────────────────────────────────────────────────────────────
-
-function buildQuakeMarker(quake) {
-  const color = quake.simulated ? '#a78bfa' : '#f97316';
-
-  const marker = L.circleMarker([quake.lat, quake.lon], {
-    radius: 6,
-    color,
-    fillColor: color,
-    fillOpacity: 0.85,
-    weight: 2,
-    className: 'quake-marker',
-  });
-
-  const container = document.createElement('div');
-
-  const place = document.createElement('p');
-  place.className = 'popup-place';
-  place.textContent = quake.place;
-  container.appendChild(place);
-
-  if (quake.simulated) {
-    const simTag = document.createElement('p');
-    simTag.className = 'popup-sim-tag';
-    simTag.textContent = 'SIMULATION — not a real event';
-    container.appendChild(simTag);
-  }
-
-  const mag = document.createElement('p');
-  mag.className = 'popup-mag';
-  mag.textContent = 'M' + quake.magnitude;
-  container.appendChild(mag);
-
-  const time = document.createElement('p');
-  time.className = 'popup-time';
-  time.textContent = fmtUtc(quake.time_utc);
-  container.appendChild(time);
-
-  const linkP = document.createElement('p');
-  linkP.className = 'popup-link';
-  const a = document.createElement('a');
-  a.href   = quake.url;
-  a.target = '_blank';
-  a.rel    = 'noopener noreferrer';
-  a.textContent = quake.simulated ? 'USGS (placeholder)' : 'USGS event page';
-  linkP.appendChild(a);
-  container.appendChild(linkP);
-
-  marker.bindPopup(container);
-  return marker;
-}
-
-/**
- * Build a region marker.
- * @param {object} region
- * @param {boolean} isSelected - if false the marker is dimmed on the map too
- */
-function buildRegionMarker(region, isSelected) {
-  const isNearby = region.classification.startsWith('NEARBY');
-  const baseColor = isNearby ? '#ef4444' : '#10b981';
-  const opacity   = isSelected ? 0.85 : 0.25;
-
-  const marker = L.circleMarker([region.lat, region.lon], {
-    radius: 10,
-    color:       isSelected ? baseColor : '#64748b',
-    fillColor:   isSelected ? baseColor : '#334155',
-    fillOpacity: opacity,
-    weight: 2,
-    opacity:     isSelected ? 1 : 0.4,
-  });
-
-  const label = document.createElement('div');
-  const name  = document.createElement('strong');
-  name.textContent = region.label;
-  label.appendChild(name);
-  const cls = document.createElement('div');
-  cls.textContent = region.classification;
-  label.appendChild(cls);
-
-  marker.bindTooltip(region.label, { permanent: false, direction: 'top' });
-  marker.bindPopup(label);
-  return marker;
-}
-
-function buildProximityCircle(lat, lon, thresholdKm) {
-  return L.circle([lat, lon], {
-    radius: thresholdKm * 1000,
-    color:       '#ef4444',
-    fillColor:   '#ef4444',
-    fillOpacity: 0.04,
-    weight: 1.5,
-    className: 'pulse-ring',
-  });
-}
-
-function buildRegionLookup(regions) {
-  const lookup = {};
-  for (const r of regions) lookup[r.id] = { lat: r.lat, lon: r.lon, label: r.label };
-  return lookup;
-}
-
-/**
- * Draw failover lines only for regions that are both NEARBY and selected
- * in My Stack. Called after every fetch and after every checkbox change.
- */
-function renderFilteredFailoverLines(data) {
-  lineLayer.clearLayers();
-  if (!stackState) return;
-
-  const lookup  = buildRegionLookup(data.regions);
-  const nearby  = MyStack.nearbySelected(stackState, data);
-
-  for (const region of nearby) {
-    if (!region.nearest_alternative) continue;
-    const altId     = region.nearest_alternative.id;
-    const altCoords = lookup[altId];
-    if (!altCoords) continue;
-
-    const line = L.polyline(
-      [[region.lat, region.lon], [altCoords.lat, altCoords.lon]],
-      { color: '#94a3b8', weight: 1.5, dashArray: '6 6', opacity: 0.7 }
-    );
-    line.bindTooltip(region.nearest_alternative.relationship, { sticky: true });
-    line.addTo(lineLayer);
-  }
-}
-
-/** Full map + panel render from a fresh /api/radar payload. */
-function renderAll(data) {
-  quakeLayer.clearLayers();
-  regionLayer.clearLayers();
-  circleLayer.clearLayers();
-  lineLayer.clearLayers();
-
-  const thresholdKm = data.threshold_km;
-  const quakeById   = {};
-  for (const q of data.quakes.items) quakeById[q.id] = q;
-
-  // Quake markers
-  for (const quake of data.quakes.items) {
-    buildQuakeMarker(quake).addTo(quakeLayer);
-  }
-
-  // Region markers + proximity circles
-  for (const region of data.regions) {
-    const isSelected = !stackState || stackState.regions.has(region.id);
-    buildRegionMarker(region, isSelected).addTo(regionLayer);
-
-    if (!region.classification.startsWith('NEARBY')) continue;
-
-    // Proximity circles for all NEARBY regions (not filtered by selection)
-    for (const nq of region.nearby_quakes) {
-      const full = quakeById[nq.quake_id];
-      if (full) {
-        buildProximityCircle(full.lat, full.lon, thresholdKm).addTo(circleLayer);
-      }
-    }
-  }
-
-  // Failover lines: selected NEARBY only (or all NEARBY before stack is loaded)
-  if (stackState) {
-    renderFilteredFailoverLines(data);
-  } else {
-    // Pre-stack fallback: draw all NEARBY failover lines
-    const lookup = buildRegionLookup(data.regions);
-    for (const region of data.regions) {
-      if (!region.classification.startsWith('NEARBY')) continue;
-      if (!region.nearest_alternative) continue;
-      const altCoords = lookup[region.nearest_alternative.id];
-      if (!altCoords) continue;
-      const line = L.polyline(
-        [[region.lat, region.lon], [altCoords.lat, altCoords.lon]],
-        { color: '#94a3b8', weight: 1.5, dashArray: '6 6', opacity: 0.7 }
-      );
-      line.bindTooltip(region.nearest_alternative.relationship, { sticky: true });
-      line.addTo(lineLayer);
-    }
-  }
-
-  renderPanels(data);
-}
-
-// ─── Panel rendering ──────────────────────────────────────────────────────────
+// ─── Dashboard panel rendering ───────────────────────────────────────────────
 
 function renderUsgsPanel(quakesBlock) {
   staleUsgs.hidden = !quakesBlock.stale;
+
   setText(usgsLastUpdated, fmtUtc(quakesBlock.last_success));
+
   const count = quakesBlock.live_count;
-  setText(usgsCount, count + ' M4.5+ event' + (count === 1 ? '' : 's') + ' in last 24 h');
+  setText(
+    usgsCount,
+    count + ' M4.5+ event' + (count === 1 ? '' : 's') + ' in last 24 h'
+  );
 }
 
-function renderComponentList(ulEl, components) {
-  while (ulEl.firstChild) ulEl.removeChild(ulEl.firstChild);
-  for (const c of components) {
-    const li = document.createElement('li');
-    li.className = 'component-item';
-    const nameSpan = document.createElement('span');
-    nameSpan.className = 'component-name';
-    nameSpan.textContent = c.name;
-    const statusSpan = document.createElement('span');
-    statusSpan.className = 'component-status-' + statusClass(c.status);
-    statusSpan.textContent = statusLabel(c.status);
-    li.appendChild(nameSpan);
-    li.appendChild(statusSpan);
-    ulEl.appendChild(li);
+function renderComponentList(listElement, components) {
+  while (listElement.firstChild) {
+    listElement.removeChild(listElement.firstChild);
+  }
+
+  for (const component of components) {
+    const item = document.createElement('li');
+    item.className = 'component-item';
+
+    const name = document.createElement('span');
+    name.className = 'component-name';
+    name.textContent = component.name;
+
+    const status = document.createElement('span');
+    status.className = 'component-status-' + statusClass(component.status);
+    status.textContent = statusLabel(component.status);
+
+    item.appendChild(name);
+    item.appendChild(status);
+    listElement.appendChild(item);
   }
 }
 
-function renderIncidentList(ulEl, incidents) {
-  while (ulEl.firstChild) ulEl.removeChild(ulEl.firstChild);
-  for (const inc of incidents) {
-    const li = document.createElement('li');
-    li.className = 'incident-item';
-    if (inc.url) {
-      const a = document.createElement('a');
-      a.href   = inc.url;
-      a.target = '_blank';
-      a.rel    = 'noopener noreferrer';
-      a.textContent = inc.name;
-      li.appendChild(a);
+function renderIncidentList(listElement, incidents) {
+  while (listElement.firstChild) {
+    listElement.removeChild(listElement.firstChild);
+  }
+
+  for (const incident of incidents) {
+    const item = document.createElement('li');
+    item.className = 'incident-item';
+
+    if (incident.url) {
+      const link = document.createElement('a');
+      link.href = incident.url;
+      link.target = '_blank';
+      link.rel = 'noopener noreferrer';
+      link.textContent = incident.name;
+      item.appendChild(link);
     } else {
-      li.textContent = inc.name;
+      item.textContent = incident.name;
     }
-    ulEl.appendChild(li);
+
+    listElement.appendChild(item);
   }
 }
 
-function renderProviderPanel(provider, staleEl, sourceEl, lastUpdEl, descEl, compEl, incEl) {
-  staleEl.hidden = !provider.stale;
-  if (provider.provider) setText(sourceEl, provider.provider);
-  setText(lastUpdEl, fmtUtc(provider.last_success));
-  setText(descEl,    provider.description ?? '—');
-  renderComponentList(compEl, provider.components ?? []);
-  renderIncidentList(incEl,  provider.incidents   ?? []);
+function renderProviderPanel(
+  provider,
+  staleElement,
+  sourceElement,
+  lastUpdatedElement,
+  descriptionElement,
+  componentsElement,
+  incidentsElement
+) {
+  staleElement.hidden = !provider.stale;
+
+  if (provider.provider) {
+    setText(sourceElement, provider.provider);
+  }
+
+  setText(lastUpdatedElement, fmtUtc(provider.last_success));
+  setText(descriptionElement, provider.description || '—');
+
+  renderComponentList(
+    componentsElement,
+    provider.components || []
+  );
+
+  renderIncidentList(
+    incidentsElement,
+    provider.incidents || []
+  );
 }
 
 function renderPanels(data) {
   renderUsgsPanel(data.quakes);
 
-  const providers  = data.providers ?? [];
-  const github     = providers.find(p => p.provider === 'GitHub');
-  const cloudflare = providers.find(p => p.provider === 'Cloudflare');
+  const providers = data.providers || [];
+
+  const github = providers.find(function (provider) {
+    return provider.provider === 'GitHub';
+  });
+
+  const cloudflare = providers.find(function (provider) {
+    return provider.provider === 'Cloudflare';
+  });
 
   if (github) {
     renderProviderPanel(
       github,
-      staleGithub, githubSource, githubLastUpdated,
-      githubDescription, githubComponents, githubIncidents
+      staleGithub,
+      githubSource,
+      githubLastUpdated,
+      githubDescription,
+      githubComponents,
+      githubIncidents
     );
   }
+
   if (cloudflare) {
     renderProviderPanel(
       cloudflare,
-      staleCloudflare, cloudflareSource, cloudflareLastUpdated,
-      cloudflareDescription, cloudflareComponents, cloudflareIncidents
+      staleCloudflare,
+      cloudflareSource,
+      cloudflareLastUpdated,
+      cloudflareDescription,
+      cloudflareComponents,
+      cloudflareIncidents
     );
   }
 }
 
-// ─── Fetch & poll ─────────────────────────────────────────────────────────────
+function renderAll(data) {
+  renderPanels(data);
+  updateGlobe(data);
+}
+
+// ─── Radar fetch and polling ──────────────────────────────────────────────────
 
 async function fetchRadar() {
   const url = '/api/radar?simulate=' + (simulate ? 'true' : 'false');
 
   try {
     const response = await fetch(url);
-    if (!response.ok) throw new Error('HTTP ' + response.status);
+
+    if (!response.ok) {
+      throw new Error('HTTP ' + response.status);
+    }
+
     const data = await response.json();
 
     lastData = data;
     updateError.hidden = true;
 
-    // Build My Stack checkboxes once; load/update state on every fetch
-    const firstFetch = !stackState;
-    if (firstFetch) {
+    if (!stackState) {
       initMyStack(data);
     }
 
     renderAll(data);
-    // applyMyStack calls refreshChecklist which rebuilds the brief after
-    // checklists are fetched.  Also rebuild immediately so the brief shows
-    // the latest data while checklists are loading.
     rebuildBrief();
     applyMyStack(data);
   } catch (_) {
@@ -628,68 +521,75 @@ async function fetchRadar() {
   }
 }
 
-// ─── Simulate / Clear buttons ─────────────────────────────────────────────────
+// ─── Simulation controls ─────────────────────────────────────────────────────
 
-btnSimulate.addEventListener('click', () => {
+btnSimulate.addEventListener('click', function () {
   simulate = true;
-  simBanner.hidden   = false;
+
+  simBanner.hidden = false;
   btnSimulate.hidden = true;
-  btnClear.hidden    = false;
+  btnClear.hidden = false;
+
   fetchRadar();
 });
 
-btnClear.addEventListener('click', () => {
+btnClear.addEventListener('click', function () {
   simulate = false;
-  simBanner.hidden   = true;
+
+  simBanner.hidden = true;
   btnSimulate.hidden = false;
-  btnClear.hidden    = true;
+  btnClear.hidden = true;
+
   fetchRadar();
 });
 
-// ─── Checklist panel ──────────────────────────────────────────────────────────
+// ─── Checklist rendering ──────────────────────────────────────────────────────
 
-const checklistPanel = document.getElementById('checklist-panel');
-const checklistCards = document.getElementById('checklist-cards');
-
-/**
- * Build and return a checklist card DOM element for one API response.
- * Uses textContent only — never innerHTML.
- */
 function buildChecklistCard(data) {
-  const card = document.createElement('div');
-  card.className = 'checklist-card' + (data.title.startsWith('SIMULATION:') ? ' checklist-card--sim' : '');
+  const titleText = data.title || '';
+  const isSimulation = titleText.startsWith('SIMULATION:');
 
-  // Title
+  const card = document.createElement('div');
+  card.className = 'checklist-card' +
+    (isSimulation ? ' checklist-card--sim' : '');
+
   const title = document.createElement('p');
-  title.className = 'checklist-card__title' + (data.title.startsWith('SIMULATION:') ? ' checklist-card__title--sim' : '');
-  title.textContent = data.title;
+  title.className = 'checklist-card__title' +
+    (isSimulation ? ' checklist-card__title--sim' : '');
+  title.textContent = titleText;
   card.appendChild(title);
 
-  // Stale warning (if any)
   if (data.stale_feeds && data.stale_feeds.length > 0) {
     const stale = document.createElement('p');
     stale.className = 'checklist-stale';
-    const feedNames = data.stale_feeds.map(sf => sf.feed).join(', ');
-    const lastTs    = data.stale_feeds[0].last_success || 'unknown';
-    stale.textContent = 'STALE data — ' + feedNames + ' last updated ' + lastTs;
+
+    const feedNames = data.stale_feeds.map(function (feed) {
+      return feed.feed;
+    }).join(', ');
+
+    const lastTimestamp =
+      data.stale_feeds[0].last_success || 'unknown';
+
+    stale.textContent =
+      'STALE data — ' + feedNames + ' last updated ' + lastTimestamp;
+
     card.appendChild(stale);
   }
 
-  // Steps
-  const ol = document.createElement('ol');
-  ol.className = 'checklist-steps';
+  const orderedList = document.createElement('ol');
+  orderedList.className = 'checklist-steps';
 
   for (const step of (data.steps || [])) {
-    const li = document.createElement('li');
-    li.className = 'checklist-step';
+    const item = document.createElement('li');
+    item.className = 'checklist-step';
 
-    // Tick-box — state held in memory only, never sent anywhere
-    const cb = document.createElement('input');
-    cb.type      = 'checkbox';
-    cb.className = 'checklist-step__cb';
-    cb.setAttribute('aria-label', 'Mark step done');
-    cb.addEventListener('change', () => {
-      li.classList.toggle('checklist-step--checked', cb.checked);
+    const checkbox = document.createElement('input');
+    checkbox.type = 'checkbox';
+    checkbox.className = 'checklist-step__cb';
+    checkbox.setAttribute('aria-label', 'Mark step done');
+
+    checkbox.addEventListener('change', function () {
+      item.classList.toggle('checklist-step--checked', checkbox.checked);
     });
 
     const body = document.createElement('span');
@@ -701,23 +601,24 @@ function buildChecklistCard(data) {
 
     if (step.link) {
       body.appendChild(document.createElement('br'));
-      const a = document.createElement('a');
-      a.href      = step.link;
-      a.target    = '_blank';
-      a.rel       = 'noopener noreferrer';
-      a.className = 'checklist-step__link';
-      a.textContent = step.link;
-      body.appendChild(a);
+
+      const link = document.createElement('a');
+      link.href = step.link;
+      link.target = '_blank';
+      link.rel = 'noopener noreferrer';
+      link.className = 'checklist-step__link';
+      link.textContent = step.link;
+
+      body.appendChild(link);
     }
 
-    li.appendChild(cb);
-    li.appendChild(body);
-    ol.appendChild(li);
+    item.appendChild(checkbox);
+    item.appendChild(body);
+    orderedList.appendChild(item);
   }
 
-  card.appendChild(ol);
+  card.appendChild(orderedList);
 
-  // Sources
   if (data.sources && data.sources.length > 0) {
     const sources = document.createElement('div');
     sources.className = 'checklist-sources';
@@ -726,13 +627,14 @@ function buildChecklistCard(data) {
     label.textContent = 'Sources: ';
     sources.appendChild(label);
 
-    for (const src of data.sources) {
-      const a = document.createElement('a');
-      a.href      = src.url;
-      a.target    = '_blank';
-      a.rel       = 'noopener noreferrer';
-      a.textContent = src.name;
-      sources.appendChild(a);
+    for (const source of data.sources) {
+      const link = document.createElement('a');
+      link.href = source.url;
+      link.target = '_blank';
+      link.rel = 'noopener noreferrer';
+      link.textContent = source.name;
+
+      sources.appendChild(link);
     }
 
     card.appendChild(sources);
@@ -741,40 +643,44 @@ function buildChecklistCard(data) {
   return card;
 }
 
-/**
- * Fetch checklist data from the server for a given region or provider and
- * append a card.  My Stack selection stays in the browser — only the
- * region_id / provider name is sent as a query parameter, never the full stack.
- */
 async function fetchAndAppendChecklist(params) {
-  const qs = new URLSearchParams();
-  if (params.region_id) qs.set('region_id', params.region_id);
-  if (params.event_id)  qs.set('event_id',  params.event_id);
-  if (params.provider)  qs.set('provider',  params.provider);
-  if (simulate)         qs.set('simulate',  'true');
+  const query = new URLSearchParams();
+
+  if (params.region_id) {
+    query.set('region_id', params.region_id);
+  }
+
+  if (params.event_id) {
+    query.set('event_id', params.event_id);
+  }
+
+  if (params.provider) {
+    query.set('provider', params.provider);
+  }
+
+  if (simulate) {
+    query.set('simulate', 'true');
+  }
 
   try {
-    const r = await fetch('/api/checklist?' + qs.toString());
-    if (!r.ok) return;   // 404 or other — silently skip
-    const data = await r.json();
+    const response = await fetch('/api/checklist?' + query.toString());
+
+    if (!response.ok) return;
+
+    const data = await response.json();
+
     lastChecklists.push(data);
     checklistCards.appendChild(buildChecklistCard(data));
   } catch (_) {
-    // Network error — silently skip; the main update-error banner already shows
+    // Keep the main dashboard available if a checklist request fails.
   }
 }
 
-/**
- * Rebuild the checklist panel after each radar fetch.
- * Called from applyMyStack whenever stackState or data changes.
- */
 async function refreshChecklist(data) {
-  // Clear existing cards
-  while (checklistCards.firstChild) checklistCards.removeChild(checklistCards.firstChild);
+  while (checklistCards.firstChild) {
+    checklistCards.removeChild(checklistCards.firstChild);
+  }
 
-  // Fix 2: guard only blocks the fetch, not the panel reveal.
-  // stackState is always set before this is called (initMyStack runs first),
-  // but be defensive in case of unexpected call order.
   if (!stackState) {
     checklistPanel.hidden = true;
     return;
@@ -782,86 +688,83 @@ async function refreshChecklist(data) {
 
   const requests = [];
 
-  // One card per selected NEARBY region
+  // One checklist for each selected NEARBY region.
   const nearby = MyStack.nearbySelected(stackState, data);
+
   for (const region of nearby) {
-    const firstQuake = region.nearby_quakes && region.nearby_quakes[0];
+    const firstQuake =
+      region.nearby_quakes && region.nearby_quakes[0];
+
     requests.push({
       region_id: region.id,
-      event_id:  firstQuake ? firstQuake.quake_id : undefined,
+      event_id: firstQuake ? firstQuake.quake_id : undefined
     });
   }
 
-  // One card per selected degraded provider
-  for (const prov of (data.providers || [])) {
-    if (!stackState.providers.has(prov.provider)) continue;
-    const degradedIndicators = new Set(['degraded_performance', 'partial_outage', 'major_outage']);
-    if (!degradedIndicators.has(prov.indicator)) continue;
-    requests.push({ provider: prov.provider });
+  // One checklist for each selected degraded provider.
+  const degradedIndicators = new Set([
+    'degraded_performance',
+    'partial_outage',
+    'major_outage'
+  ]);
+
+  for (const provider of (data.providers || [])) {
+    if (!stackState.providers.has(provider.provider)) continue;
+    if (!degradedIndicators.has(provider.indicator)) continue;
+
+    requests.push({
+      provider: provider.provider
+    });
   }
 
-  // If nothing warrants a checklist, show all_clear
   if (requests.length === 0) {
     requests.push({});
   }
 
-  // Fix 2: reveal the panel before awaiting any fetch so it is never
-  // left hidden if a fetch silently fails.
   checklistPanel.hidden = false;
-
-  // Collect fetched checklist objects for the brief
   lastChecklists = [];
 
   for (const params of requests) {
     await fetchAndAppendChecklist(params);
   }
 
-  // Rebuild brief with updated checklists
   rebuildBrief();
 }
 
 // ─── Incident Brief ───────────────────────────────────────────────────────────
 
-/**
- * Rebuild the brief textarea from current state.
- * Called whenever data, stack selection, or simulation changes.
- * Never sends data to the server — brief.js is a pure local function.
- */
 function rebuildBrief() {
   if (!lastData || typeof BriefBuilder === 'undefined') return;
 
-  // Build a plain stackSelection object from the current Sets (or null if
-  // stackState hasn't been initialised yet, meaning all regions/providers).
   const stackSelection = stackState
-    ? { regions: [...stackState.regions], providers: [...stackState.providers] }
+    ? {
+        regions: Array.from(stackState.regions),
+        providers: Array.from(stackState.providers)
+      }
     : null;
 
   const text = BriefBuilder.buildBrief(
     lastData,
     lastChecklists,
     stackSelection,
-    { simulate }
+    { simulate: simulate }
   );
 
-  // Set via .value only — never innerHTML
   briefTextarea.value = text;
 }
 
-/** Show a short feedback message next to the copy button. */
-function showCopyMsg(msg, isWarn) {
-  briefCopyMsg.textContent = msg;
-  briefCopyMsg.className   = 'brief-copy-msg' + (isWarn ? ' brief-copy-msg--warn' : '');
-  briefCopyMsg.hidden      = false;
-  setTimeout(() => { briefCopyMsg.hidden = true; }, 3000);
+function showCopyMsg(message, warning) {
+  briefCopyMsg.textContent = message;
+  briefCopyMsg.className =
+    'brief-copy-msg' + (warning ? ' brief-copy-msg--warn' : '');
+  briefCopyMsg.hidden = false;
+
+  setTimeout(function () {
+    briefCopyMsg.hidden = true;
+  }, 3000);
 }
 
-/**
- * Copy handler: three-stage fallback chain.
- *   1. navigator.clipboard.writeText  (modern — async, requires HTTPS or localhost)
- *   2. textarea select + document.execCommand('copy')  (legacy Safari)
- *   3. Instruct user to tap-and-hold
- */
-btnCopyBrief.addEventListener('click', async () => {
+btnCopyBrief.addEventListener('click', async function () {
   const text = briefTextarea.value;
   if (!text) return;
 
@@ -870,20 +773,23 @@ btnCopyBrief.addEventListener('click', async () => {
     showCopyMsg('Copied', false);
     return;
   } catch (_) {
-    // clipboard API unavailable or denied — fall through
+    // Continue to the Safari fallback.
   }
 
-  // Stage 2: select + execCommand
   briefTextarea.select();
   briefTextarea.setSelectionRange(0, 99999);
+
   try {
-    const ok = document.execCommand('copy');
-    if (ok) { showCopyMsg('Copied', false); return; }
+    const copied = document.execCommand('copy');
+
+    if (copied) {
+      showCopyMsg('Copied', false);
+      return;
+    }
   } catch (_) {
-    // execCommand also failed — fall through
+    // Continue to the manual fallback.
   }
 
-  // Stage 3: manual instruction
   showCopyMsg('Tap and hold the text, then Copy.', true);
 });
 
