@@ -1,28 +1,30 @@
-/* ═══════════════════════════════════════════════════════════════════════
-   Failover Radar — dark-mode stylesheet
-   ═══════════════════════════════════════════════════════════════════════ */
 
-/* ── Design tokens ─────────────────────────────────────────────────────── */
+/* ==========================================================
+   FAILOVER RADAR — ARCTIC AURORA RESPONSIVE DASHBOARD
+   Clean layout: desktop two-column / mobile vertical
+   ========================================================== */
+
+/* DESIGN TOKENS */
 :root {
-  --bg:           #0b0f17;
-  --bg-panel:     #111827;
-  --bg-header:    #0d1424;
-  --border:       #1f2a3c;
-  --text:         #e2e8f0;
-  --text-muted:   #94a3b8;
-  --nearby:       #ef4444;
-  --nearby-bg:    rgba(239, 68, 68, 0.12);
-  --clear:        #10b981;
-  --warn:         #f59e0b;
-  --sim-banner:   #7c3aed;
-  --sim-text:     #ede9fe;
-  --stale-bg:     #78350f;
-  --stale-text:   #fde68a;
-  --radius:       6px;
-  --tap:          44px;
+  --bg: #060b14;
+  --bg-panel: rgba(14, 27, 45, 0.92);
+  --bg-header: rgba(8, 15, 28, 0.94);
+  --border: rgba(186, 230, 253, 0.22);
+  --text: #f0f9ff;
+  --text-muted: #94b8d0;
+  --nearby: #fb7185;
+  --nearby-bg: rgba(239, 68, 68, 0.12);
+  --clear: #10f5c0;
+  --warn: #fbbf24;
+  --sim-banner: #7c3aed;
+  --sim-text: #ede9fe;
+  --stale-bg: #78350f;
+  --stale-text: #fde68a;
+  --radius: 16px;
+  --tap: 44px;
 }
 
-/* ── Reset & base ──────────────────────────────────────────────────────── */
+/* RESET */
 *, *::before, *::after {
   box-sizing: border-box;
   margin: 0;
@@ -30,163 +32,322 @@
 }
 
 html {
-  height: 100%;
+  min-height: 100%;
+  width: 100%;
   overflow-x: hidden;
+  scroll-behavior: smooth;
 }
 
 body {
-  /* Fix 1: allow vertical scroll so the checklist panel below app-main
-     is reachable on iPhone Safari.  min-height (not height) lets the body
-     grow past the viewport.  overflow-y: auto lets Safari scroll it. */
-  min-height: 100%;
+  min-height: 100vh;
+  min-height: 100dvh;
+  width: 100%;
   overflow-x: hidden;
   overflow-y: auto;
-  background: var(--bg);
+  display: flex;
+  flex-direction: column;
+  background:
+    radial-gradient(
+      ellipse 90% 42% at 25% -8%,
+      rgba(16, 245, 192, 0.16),
+      transparent 62%
+    ),
+    radial-gradient(
+      ellipse 75% 45% at 78% -6%,
+      rgba(139, 92, 246, 0.20),
+      transparent 60%
+    ),
+    #060b14;
   color: var(--text);
   font-family: system-ui, -apple-system, sans-serif;
   font-size: 14px;
   line-height: 1.5;
-  min-height: 100dvh;
-  display: flex;
-  flex-direction: column;
+  font-variant-numeric: tabular-nums;
 }
 
 a {
   color: #60a5fa;
   text-underline-offset: 2px;
 }
-a:hover { color: #93c5fd; }
 
-/* ── Simulation banner ─────────────────────────────────────────────────── */
-.sim-banner {
-  background: var(--sim-banner);
-  color: var(--sim-text);
-  font-weight: 700;
-  font-size: 13px;
-  letter-spacing: 0.04em;
-  text-align: center;
-  padding: 8px 16px;
-  flex-shrink: 0;
+a:hover {
+  color: #93c5fd;
 }
 
-/* ── Header ────────────────────────────────────────────────────────────── */
+/* SIMULATION BANNER */
+.sim-banner {
+  flex: 0 0 auto;
+  padding: 10px 16px;
+  text-align: center;
+  color: var(--sim-text);
+  background: linear-gradient(
+    90deg,
+    #0d9488,
+    #0284c7,
+    #7c3aed,
+    #0d9488
+  );
+  background-size: 220% 220%;
+  animation: aurora-drift 8s ease infinite;
+  border-bottom: 1px solid rgba(224, 242, 254, 0.35);
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+@keyframes aurora-drift {
+  0%, 100% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+}
+
+/* HEADER */
 .app-header {
-  background: var(--bg-header);
-  border-bottom: 1px solid var(--border);
+  position: relative;
+  z-index: 100;
+  flex: 0 0 64px;
+  height: 64px;
+  min-height: 64px;
+  width: 100%;
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 0 16px;
-  height: 56px;
-  flex-shrink: 0;
+  gap: 12px;
+  padding: 0 20px;
+  background: var(--bg-header);
+  border-bottom: 1px solid var(--border);
+  box-shadow: 0 8px 32px rgba(2, 6, 16, 0.5);
+  backdrop-filter: blur(22px) saturate(140%);
+  -webkit-backdrop-filter: blur(22px) saturate(140%);
 }
 
 .header-title {
   display: flex;
   align-items: center;
   gap: 8px;
+  min-width: 0;
 }
 
-.radar-icon { font-size: 20px; }
+.radar-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 38px;
+  height: 38px;
+  flex: 0 0 38px;
+  border-radius: 12px;
+  background: linear-gradient(
+    135deg,
+    rgba(16, 245, 192, 0.28),
+    rgba(56, 189, 248, 0.25)
+  );
+  border: 1px solid rgba(186, 230, 253, 0.48);
+  font-size: 19px;
+}
 
 h1 {
-  font-size: 18px;
-  font-weight: 700;
-  color: var(--clear);
+  color: #bae6fd;
+  font-size: 19px;
+  font-weight: 800;
+  letter-spacing: -0.02em;
   white-space: nowrap;
 }
 
 .header-controls {
   display: flex;
+  align-items: center;
   gap: 8px;
 }
 
-/* ── Buttons ───────────────────────────────────────────────────────────── */
+/* BUTTONS */
 .btn {
   min-height: var(--tap);
   min-width: var(--tap);
   padding: 0 18px;
-  border: none;
-  border-radius: var(--radius);
+  border: 1px solid rgba(224, 242, 254, 0.32);
+  border-radius: 9999px;
   font-size: 14px;
-  font-weight: 600;
+  font-weight: 700;
   cursor: pointer;
   white-space: nowrap;
-  transition: opacity 0.15s;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.25),
+    0 6px 18px rgba(2, 6, 16, 0.35);
+  transition: transform 0.14s ease, opacity 0.15s;
 }
-.btn:hover  { opacity: 0.85; }
-.btn:active { opacity: 0.7; }
 
-.btn-warn  { background: var(--nearby); color: #fff; }
-.btn-clear { background: var(--clear);  color: #0b0f17; }
+.btn:hover {
+  transform: translateY(-1px);
+  opacity: 0.9;
+}
 
-/* ── Update-failed notice ─────────────────────────────────────────────��── */
+.btn:active {
+  opacity: 0.7;
+}
+
+.btn-warn {
+  background: linear-gradient(180deg, #fb7185, #e11d48);
+  color: #fff;
+}
+
+.btn-clear {
+  background: linear-gradient(180deg, #10f5c0, #059669);
+  color: #022c22;
+}
+
+.btn-stack,
+.btn-copy-brief {
+  background: linear-gradient(
+    180deg,
+    rgba(56, 189, 248, 0.85),
+    rgba(14, 116, 144, 0.92)
+  );
+  color: #fff;
+  border: 1px solid rgba(56, 189, 248, 0.35);
+}
+
+.btn-stack[aria-expanded="true"] {
+  background: #1d4ed8;
+}
+
+/* UPDATE ERROR */
 .update-error {
+  position: relative;
+  z-index: 110;
+  flex: 0 0 auto;
   background: #1a1206;
   border-bottom: 1px solid var(--warn);
   color: var(--warn);
   font-size: 13px;
   text-align: center;
   padding: 6px 16px;
-  flex-shrink: 0;
 }
 
-/* ── Main layout ───────────────────────────────────────────────────────── */
+/* ==========================================================
+   MAIN LAYOUT
+   ========================================================== */
+
 .app-main {
-  /* Fix 1: flex: 1 with min-height: 0 gives the grid a bounded height so
-     Leaflet can fill its pane, while the body scrolls vertically to reach
-     the checklist panel below.  overflow is NOT set here — clipping the map
-     column is handled by map-pane position:relative + #map height:100%. */
-  flex: 1;
-  min-height: 0;
-  /* Desktop: map 60%, sidebar 40% */
   display: grid;
-  grid-template-columns: 60fr 40fr;
-  grid-template-rows: 1fr;
+  grid-template-columns: minmax(0, 1.35fr) minmax(320px, 0.9fr);
+  grid-template-rows: auto;
+  align-items: stretch;
+  gap: 0;
+  width: 100%;
+  min-width: 0;
+  min-height: 0;
+  height: auto;
+  flex: 0 0 auto;
+  overflow: visible;
 }
 
-/* Desktop: give app-main a concrete viewport height so the map fills it
-   without relying on overflow:hidden to constrain children. */
-@media (min-width: 768px) {
-  .app-main {
-    height: calc(100dvh - 56px); /* full viewport minus header */
-  }
-}
-
-/* ── Leaflet tile pane — dark-cyan NOC radar filter ────────────────────── */
-.leaflet-tile-pane {
-  filter: invert(100%) hue-rotate(195deg) brightness(88%) contrast(115%) saturate(130%);
-}
-
-/* ── Map pane ──────────────────────────────────────────────────────────── */
+/* EARTH CONTAINER */
 .map-pane {
   position: relative;
-  min-height: 0;
-  /* Fix 1: clip map tiles within the pane only, not the whole page */
+  isolation: isolate;
+  min-width: 0;
+  min-height: 520px;
+  height: clamp(520px, calc(100dvh - 100px), 850px);
   overflow: hidden;
+  background:
+    radial-gradient(
+      ellipse 75% 45% at 50% 10%,
+      rgba(16, 245, 192, 0.13),
+      transparent 60%
+    ),
+    radial-gradient(
+      circle at 50% 50%,
+      rgba(56, 189, 248, 0.18),
+      #030812 74%
+    );
+  border-right: 1px solid rgba(186, 230, 253, 0.16);
 }
 
 #map {
+  position: relative;
+  isolation: isolate;
   width: 100%;
   height: 100%;
-  background: #0b0f17;
+  min-height: 0;
+  overflow: hidden;
+  background: transparent;
 }
 
-/* ── Sidebar ───────────────────────────────────────────────────────────── */
+#map canvas,
+#map .globe-canvas {
+  display: block;
+  width: 100%;
+  height: 100%;
+  touch-action: none;
+  outline: none;
+}
+
+.globe-loading {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  color: rgba(186, 230, 253, 0.78);
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.18em;
+  pointer-events: none;
+}
+
+/* SIMULATION NARRATION */
+.sim-narration {
+  position: absolute;
+  left: 14px;
+  right: 14px;
+  bottom: 14px;
+  z-index: 5;
+  padding: 12px 16px;
+  border-radius: 16px;
+  background: rgba(10, 20, 38, 0.88);
+  border: 1px solid rgba(16, 245, 192, 0.45);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.15),
+    0 8px 28px rgba(2, 6, 16, 0.6);
+  color: #ecfdf5;
+  font-size: 12px;
+  font-weight: 600;
+  line-height: 1.55;
+  text-align: center;
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  pointer-events: none;
+}
+
+/* ==========================================================
+   RADAR SIDEBAR
+   ========================================================== */
+
 .sidebar {
-  overflow-y: auto;
-  overflow-x: hidden;
-  border-left: 1px solid var(--border);
+  position: relative;
+  min-width: 0;
+  width: 100%;
   display: flex;
   flex-direction: column;
-  gap: 1px;
-  background: var(--border);
+  align-items: stretch;
+  gap: 12px;
+  padding: 16px;
+  overflow: visible;
+  background: rgba(8, 15, 28, 0.82);
+  border-left: 1px solid rgba(186, 230, 253, 0.2);
 }
 
-/* ── Panel ─────────────────────────────────────────────────────────────── */
 .panel {
-  background: var(--bg-panel);
+  min-width: 0;
   padding: 14px 16px;
+  background: var(--bg-panel);
+  border: 1px solid rgba(186, 230, 253, 0.24);
+  border-left: 3px solid var(--clear);
+  border-radius: var(--radius);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.10),
+    0 10px 30px rgba(2, 6, 16, 0.35);
+  backdrop-filter: blur(20px) saturate(135%);
+  -webkit-backdrop-filter: blur(20px) saturate(135%);
 }
 
 .panel-header {
@@ -197,37 +358,39 @@ h1 {
 }
 
 .panel-source {
+  color: #e0f2fe;
+  font-size: 12.5px;
   font-weight: 700;
-  font-size: 13px;
-  letter-spacing: 0.03em;
+  letter-spacing: 0.08em;
   text-transform: uppercase;
-  color: var(--text);
 }
 
 .panel-meta {
-  font-size: 12px;
   color: var(--text-muted);
+  font-size: 12px;
   margin-bottom: 6px;
 }
 
 .panel-detail {
-  font-size: 13px;
   color: var(--text);
+  font-size: 13px;
 }
 
-/* ── Stale badge ───────────────────────────────────────────────────────── */
-.stale-badge {
-  background: var(--stale-bg);
-  color: var(--stale-text);
-  font-size: 10px;
-  font-weight: 700;
-  letter-spacing: 0.08em;
-  padding: 2px 6px;
-  border-radius: 3px;
-  flex-shrink: 0;
+.panel-attribution {
+  margin-top: auto;
 }
 
-/* ── Component list ────────────────────────────────────────────────────── */
+.attribution-text {
+  color: var(--text-muted);
+  font-size: 11px;
+  margin-bottom: 4px;
+}
+
+.attribution-text:last-child {
+  margin-bottom: 0;
+}
+
+/* STATUS AND INCIDENT LISTS */
 .component-list,
 .incident-list {
   list-style: none;
@@ -238,103 +401,65 @@ h1 {
 }
 
 .component-list:empty,
-.incident-list:empty { display: none; }
+.incident-list:empty {
+  display: none;
+}
 
 .component-item {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  font-size: 12px;
   gap: 8px;
+  padding: 6px 10px;
+  border-radius: 10px;
+  background: rgba(224, 242, 254, 0.06);
+  border: 1px solid rgba(186, 230, 253, 0.1);
+  font-size: 12px;
 }
 
-.component-name  { color: var(--text-muted); }
-.component-status-operational         { color: var(--clear); }
-.component-status-degraded_performance { color: var(--warn); }
-.component-status-partial_outage      { color: var(--warn); }
-.component-status-major_outage        { color: var(--nearby); }
-.component-status-unknown             { color: var(--text-muted); }
+.component-name {
+  color: var(--text-muted);
+}
 
-.incident-item {
-  font-size: 12px;
+.component-status-operational {
+  color: var(--clear);
+}
+
+.component-status-degraded_performance,
+.component-status-partial_outage {
+  color: var(--warn);
+}
+
+.component-status-major_outage {
   color: var(--nearby);
 }
-.incident-item a { color: var(--nearby); }
 
-/* ── Attribution panel ─────────────────────────────────────────────────── */
-.panel-attribution {
-  margin-top: auto;
-}
-
-.attribution-text {
-  font-size: 11px;
+.component-status-unknown {
   color: var(--text-muted);
-  margin-bottom: 4px;
-}
-.attribution-text:last-child { margin-bottom: 0; }
-
-/* ── Leaflet popup overrides ───────────────────────────────────────────── */
-.leaflet-popup-content-wrapper {
-  background: #1e293b;
-  color: var(--text);
-  border: 1px solid var(--border);
-  border-radius: var(--radius);
-  box-shadow: 0 4px 16px rgba(0,0,0,0.6);
-}
-.leaflet-popup-tip { background: #1e293b; }
-.leaflet-popup-content { margin: 10px 14px; font-size: 13px; }
-.leaflet-popup-content p { margin: 3px 0; }
-.popup-place    { font-weight: 700; color: var(--text); }
-.popup-mag      { color: var(--warn); }
-.popup-time     { color: var(--text-muted); font-size: 11px; }
-.popup-link a   { color: #60a5fa; }
-.popup-sim-tag  { color: var(--sim-text); font-size: 11px; font-style: italic; }
-
-/* ── Leaflet tooltip overrides ─────────────────────────────────────────── */
-.leaflet-tooltip {
-  background: #1e293b;
-  color: var(--text-muted);
-  border: 1px solid var(--border);
-  font-size: 11px;
-  padding: 3px 7px;
 }
 
-/* ── Pulse animation (opacity + stroke only, no transform) ─────────────── */
-@keyframes pulse-ring {
-  0%   { opacity: 0.7; stroke-opacity: 0.7; }
-  50%  { opacity: 0.25; stroke-opacity: 0.25; }
-  100% { opacity: 0.7; stroke-opacity: 0.7; }
+.incident-item {
+  color: var(--nearby);
+  font-size: 12px;
 }
 
-.pulse-ring path {
-  animation: pulse-ring 2s ease-in-out infinite;
+.incident-item a {
+  color: var(--nearby);
 }
 
-/* ── Responsive: mobile (≤ 767px) ──────────────────────────────────────── */
-@media (max-width: 767px) {
-  .app-main {
-    grid-template-columns: 1fr;
-    grid-template-rows: 62vh 1fr;
-    overflow: visible;
-  }
-
-  .map-pane {
-    height: 62vh;
-  }
-
-  .sidebar {
-    border-left: none;
-    border-top: 1px solid var(--border);
-    overflow-y: auto;
-    max-height: none;
-  }
-
-  h1 { font-size: 15px; }
-  .radar-icon { font-size: 17px; }
-  .btn { padding: 0 14px; font-size: 13px; }
+/* STALE BADGE */
+.stale-badge {
+  flex-shrink: 0;
+  padding: 2px 6px;
+  border-radius: 3px;
+  background: var(--stale-bg);
+  color: var(--stale-text);
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
 }
 
-/* ── Compact HUD <details> panels ──────────────────────────────────────── */
+/* PANEL DETAILS */
 .panel-summary {
   display: flex;
   align-items: center;
@@ -344,13 +469,14 @@ h1 {
   user-select: none;
 }
 
-/* Remove default marker in WebKit */
-.panel-summary::-webkit-details-marker { display: none; }
+.panel-summary::-webkit-details-marker {
+  display: none;
+}
 
 .panel-details-toggle {
   margin-left: auto;
-  font-size: 11px;
   color: var(--text-muted);
+  font-size: 11px;
   transition: transform 0.15s;
 }
 
@@ -362,37 +488,91 @@ details[open] .panel-details-toggle {
   margin-top: 6px;
 }
 
-/* Quake marker glow */
 .quake-marker {
   filter: drop-shadow(0 0 4px currentColor);
 }
 
-/* ── My Stack button ───────────────────────────────────────────────────── */
-.btn-stack {
-  background: #1e3a5f;
-  color: #93c5fd;
-  border: 1px solid #2563eb44;
+/* LEAFLET COMPATIBILITY */
+.leaflet-tile-pane {
+  filter: invert(100%) hue-rotate(195deg) brightness(88%) contrast(115%) saturate(130%);
 }
-.btn-stack:hover { background: #1e40af; color: #bfdbfe; }
-.btn-stack[aria-expanded="true"] {
-  background: #1d4ed8;
+
+.leaflet-popup-content-wrapper {
+  background: #1e293b;
+  color: var(--text);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  box-shadow: 0 4px 16px rgba(0,0,0,0.6);
+}
+
+.leaflet-popup-tip {
+  background: #1e293b;
+}
+
+.leaflet-popup-content {
+  margin: 10px 14px;
+  font-size: 13px;
+}
+
+.leaflet-popup-content p {
+  margin: 3px 0;
+}
+
+.popup-place {
+  font-weight: 700;
+  color: var(--text);
+}
+
+.popup-mag {
+  color: var(--warn);
+}
+
+.popup-time {
+  color: var(--text-muted);
+  font-size: 11px;
+}
+
+.popup-link a {
+  color: #60a5fa;
+}
+
+.popup-sim-tag {
+  color: var(--sim-text);
+  font-size: 11px;
+  font-style: italic;
+}
+
+.leaflet-tooltip {
+  background: #1e293b;
+  color: var(--text-muted);
+  border: 1px solid var(--border);
+  font-size: 11px;
+  padding: 3px 7px;
+}
+
+/* ==========================================================
+   MY STACK
+   ========================================================== */
+
+.btn-stack {
+  background: linear-gradient(180deg, #38bdf8, #0e7490);
   color: #fff;
 }
 
-/* ── My Stack drawer ───────────────────────────────────────────────────── */
 .mystack-drawer {
   position: fixed;
-  top: 56px;           /* below header */
+  top: 64px;
   right: 0;
+  z-index: 500;
   width: 380px;
   max-width: 100vw;
-  max-height: calc(100dvh - 56px);
+  max-height: calc(100dvh - 64px);
   overflow-y: auto;
-  background: var(--bg-panel);
+  background: rgba(10, 18, 34, 0.96);
   border-left: 1px solid var(--border);
   border-bottom: 1px solid var(--border);
-  z-index: 500;
   box-shadow: -4px 4px 24px rgba(0, 0, 0, 0.5);
+  backdrop-filter: blur(24px);
 }
 
 .mystack-drawer-inner {
@@ -409,60 +589,55 @@ details[open] .panel-details-toggle {
 }
 
 .mystack-drawer-title {
-  font-weight: 700;
+  color: var(--text);
   font-size: 13px;
+  font-weight: 700;
   letter-spacing: 0.03em;
   text-transform: uppercase;
-  color: var(--text);
 }
 
 .mystack-close-btn {
+  min-height: var(--tap);
+  min-width: var(--tap);
   background: transparent;
   color: var(--text-muted);
   border: 1px solid var(--border);
-  min-height: var(--tap);
-  min-width: var(--tap);
   font-size: 16px;
 }
-.mystack-close-btn:hover { color: var(--text); border-color: var(--text-muted); }
+
+.mystack-close-btn:hover {
+  color: var(--text);
+  border-color: var(--text-muted);
+}
 
 .btn-ghost {
   background: transparent;
 }
 
-/* ── My Stack scrim ────────────────────────────────────────────────────── */
-/* Fix 3: manage visibility via .is-open class only — avoids the hidden
-   attribute and media-query display:none fighting each other on Safari. */
 .mystack-scrim {
   display: none;
   position: fixed;
   inset: 0;
-  background: rgba(0, 0, 0, 0.55);
   z-index: 499;
+  background: rgba(0, 0, 0, 0.55);
 }
 
-/* Show scrim on mobile only when drawer is open */
-@media (max-width: 767px) {
-  .mystack-scrim.is-open {
-    display: block;
-  }
+.mystack-scrim.is-open {
+  display: block;
 }
 
-/* ── My Stack hint ─────────────────────────────────────────────────────── */
 .mystack-hint {
-  font-size: 12px;
   color: var(--text-muted);
+  font-size: 12px;
   line-height: 1.5;
 }
 
-/* ── My Stack columns ──────────────────────────────────────────────────── */
 .mystack-columns {
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 12px;
 }
 
-/* ── My Stack fieldsets ────────────────────────────────────────────────── */
 .mystack-fieldset {
   border: 1px solid var(--border);
   border-radius: var(--radius);
@@ -470,12 +645,12 @@ details[open] .panel-details-toggle {
 }
 
 .mystack-legend {
+  padding: 0 4px;
+  color: var(--text-muted);
   font-size: 11px;
   font-weight: 700;
   letter-spacing: 0.05em;
   text-transform: uppercase;
-  color: var(--text-muted);
-  padding: 0 4px;
 }
 
 .mystack-checklist {
@@ -485,50 +660,44 @@ details[open] .panel-details-toggle {
   margin-top: 6px;
 }
 
-/* ── My Stack labels (44 px tap targets) ────────────────────────────────── */
 .mystack-label {
   display: flex;
   align-items: center;
   gap: 8px;
-  font-size: 13px;
-  color: var(--text);
-  cursor: pointer;
-  min-height: var(--tap);    /* 44 px */
+  min-height: var(--tap);
   padding: 0 4px;
   border-radius: var(--radius);
-  transition: color 0.1s, opacity 0.1s;
+  color: var(--text);
+  font-size: 13px;
+  cursor: pointer;
 }
-.mystack-label:hover { color: #fff; }
 
-/* Dimmed = unselected */
 .mystack-label--dim {
   opacity: 0.35;
   color: var(--text-muted);
 }
-.mystack-label--dim:hover { opacity: 0.6; }
 
 .mystack-cb {
   width: 18px;
   height: 18px;
+  flex-shrink: 0;
   accent-color: var(--clear);
   cursor: pointer;
-  flex-shrink: 0;
 }
 
 .mystack-loading {
-  font-size: 12px;
   color: var(--text-muted);
+  font-size: 12px;
   padding: 8px 4px;
 }
 
-/* ── My Stack summary banner ───────────────────────────────────────────── */
 .mystack-banner {
-  background: #0d1a2a;
+  padding: 8px 12px;
   border-left: 3px solid var(--clear);
+  border-radius: 0 var(--radius) var(--radius) 0;
+  background: rgba(13, 26, 42, 0.9);
   color: var(--text);
   font-size: 12px;
-  padding: 8px 12px;
-  border-radius: 0 var(--radius) var(--radius) 0;
   line-height: 1.6;
 }
 
@@ -542,26 +711,25 @@ details[open] .panel-details-toggle {
   background: rgba(124, 58, 237, 0.12);
 }
 
-/* ── My Stack nearby advice ────────────────────────────────────────────── */
 .mystack-advice {
-  background: rgba(239, 68, 68, 0.06);
-  border: 1px solid rgba(239, 68, 68, 0.25);
-  border-radius: var(--radius);
-  padding: 8px 12px;
   display: flex;
   flex-direction: column;
   gap: 8px;
+  padding: 8px 12px;
+  border: 1px solid rgba(239, 68, 68, 0.25);
+  border-radius: var(--radius);
+  background: rgba(239, 68, 68, 0.06);
 }
 
 .mystack-advice-item {
-  font-size: 12px;
   color: var(--text);
+  font-size: 12px;
   line-height: 1.5;
 }
 
 .advice-region {
-  font-weight: 700;
   color: var(--nearby);
+  font-weight: 700;
 }
 
 .advice-alt {
@@ -569,61 +737,45 @@ details[open] .panel-details-toggle {
   font-style: italic;
 }
 
-/* ── My Stack mobile bottom sheet ─────────────────────────────────────── */
-@media (max-width: 767px) {
-  .mystack-drawer {
-    top: auto;
-    bottom: 0;
-    right: 0;
-    left: 0;
-    width: 100%;
-    max-height: 72dvh;
-    border-left: none;
-    border-top: 1px solid var(--border);
-    border-radius: 12px 12px 0 0;
-  }
-
-  .mystack-columns {
-    grid-template-columns: 1fr;
-  }
-}
-
-/* ═══════════════════════════════════════════════════════════════════════
-   Checklist panel
-   ═══════════════════════════════════════════════════════════════════════ */
+/* ==========================================================
+   CHECKLIST
+   ========================================================== */
 
 .checklist-panel {
-  background: var(--bg);
+  position: relative;
+  z-index: 2;
+  flex: 0 0 auto;
+  width: 100%;
+  background: #060b14;
   border-top: 1px solid var(--border);
-  flex-shrink: 0;
 }
 
 .checklist-panel-inner {
   max-width: 1200px;
   margin: 0 auto;
-  padding: 16px 20px 20px;
+  padding: 20px;
 }
 
 .checklist-panel-heading {
+  margin-bottom: 4px;
+  color: var(--text-muted);
   font-size: 14px;
   font-weight: 700;
   letter-spacing: 0.04em;
   text-transform: uppercase;
-  color: var(--text-muted);
-  margin-bottom: 4px;
 }
 
 .checklist-label-badge {
   display: inline-block;
+  margin-bottom: 14px;
+  padding: 2px 7px;
+  border: 1px solid var(--clear);
+  border-radius: 3px;
+  color: var(--clear);
   font-size: 11px;
   font-weight: 700;
   letter-spacing: 0.06em;
   text-transform: uppercase;
-  color: var(--clear);
-  border: 1px solid var(--clear);
-  border-radius: 3px;
-  padding: 2px 7px;
-  margin-bottom: 14px;
 }
 
 .checklist-cards {
@@ -632,12 +784,12 @@ details[open] .panel-details-toggle {
   gap: 16px;
 }
 
-/* ── Individual checklist card ─────────────────────────────────────────── */
 .checklist-card {
+  padding: 14px 16px;
   background: var(--bg-panel);
   border: 1px solid var(--border);
   border-radius: var(--radius);
-  padding: 14px 16px;
+  box-shadow: 0 10px 30px rgba(2, 6, 16, 0.3);
 }
 
 .checklist-card--sim {
@@ -645,10 +797,10 @@ details[open] .panel-details-toggle {
 }
 
 .checklist-card__title {
+  margin-bottom: 10px;
+  color: var(--text);
   font-size: 13px;
   font-weight: 700;
-  color: var(--text);
-  margin-bottom: 10px;
   line-height: 1.4;
 }
 
@@ -656,35 +808,32 @@ details[open] .panel-details-toggle {
   color: var(--sim-text);
 }
 
-/* ── Stale warning inside a card ───────────────────────────────────────── */
 .checklist-stale {
+  margin-bottom: 10px;
+  padding: 4px 8px;
+  border-radius: 3px;
   background: var(--stale-bg);
   color: var(--stale-text);
   font-size: 11px;
   font-weight: 600;
-  padding: 4px 8px;
-  border-radius: 3px;
-  margin-bottom: 10px;
 }
 
-/* ── Step list ─────────────────────────────────────────────────────────── */
 .checklist-steps {
-  list-style: none;
   display: flex;
   flex-direction: column;
   gap: 8px;
+  list-style: none;
 }
 
 .checklist-step {
   display: flex;
   align-items: flex-start;
   gap: 10px;
-  font-size: 13px;
   color: var(--text);
+  font-size: 13px;
   line-height: 1.5;
 }
 
-/* Tick-box — 44 px tap target area */
 .checklist-step__cb {
   flex-shrink: 0;
   width: 18px;
@@ -701,27 +850,25 @@ details[open] .panel-details-toggle {
 
 .checklist-step__link {
   display: inline-block;
-  font-size: 11px;
-  color: #60a5fa;
   margin-top: 2px;
+  color: #60a5fa;
+  font-size: 11px;
 }
 
-/* Strike-through when ticked */
 .checklist-step--checked .checklist-step__body {
   opacity: 0.45;
   text-decoration: line-through;
 }
 
-/* ── Sources footer ────────────────────────────────────────────────────── */
 .checklist-sources {
-  margin-top: 12px;
-  font-size: 11px;
-  color: var(--text-muted);
-  border-top: 1px solid var(--border);
-  padding-top: 8px;
   display: flex;
   flex-wrap: wrap;
   gap: 6px 14px;
+  margin-top: 12px;
+  padding-top: 8px;
+  border-top: 1px solid var(--border);
+  color: var(--text-muted);
+  font-size: 11px;
 }
 
 .checklist-sources a {
@@ -729,25 +876,27 @@ details[open] .panel-details-toggle {
   text-decoration: underline;
   text-underline-offset: 2px;
 }
-.checklist-sources a:hover { color: var(--text); }
 
-/* ═══════════════════════════════════════════════════════════════════════
-   Incident Brief panel
-   ═══════════════════════════════════════════════════════════════════════ */
+/* ==========================================================
+   INCIDENT BRIEF
+   ========================================================== */
 
 .brief-panel {
-  background: var(--bg);
+  position: relative;
+  z-index: 2;
+  flex: 0 0 auto;
+  width: 100%;
+  background: #060b14;
   border-top: 1px solid var(--border);
-  flex-shrink: 0;
 }
 
 .brief-panel-inner {
-  max-width: 1200px;
-  margin: 0 auto;
-  padding: 16px 20px 20px;
   display: flex;
   flex-direction: column;
   gap: 10px;
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 20px;
 }
 
 .brief-panel-header {
@@ -758,35 +907,25 @@ details[open] .panel-details-toggle {
 }
 
 .brief-panel-heading {
+  color: var(--text-muted);
   font-size: 14px;
   font-weight: 700;
   letter-spacing: 0.04em;
   text-transform: uppercase;
-  color: var(--text-muted);
-  white-space: nowrap;
 }
 
-/* Copy button — min 44px tall per R9 */
 .btn-copy-brief {
-  min-height: var(--tap);  /* 44px */
-  background: #1e3a5f;
-  color: #93c5fd;
-  border: 1px solid #2563eb44;
-  font-size: 13px;
-  font-weight: 600;
+  min-height: var(--tap);
   padding: 0 16px;
   border-radius: var(--radius);
+  font-size: 13px;
+  font-weight: 600;
   cursor: pointer;
-  white-space: nowrap;
-  transition: background 0.15s, color 0.15s;
 }
-.btn-copy-brief:hover  { background: #1e40af; color: #bfdbfe; }
-.btn-copy-brief:active { opacity: 0.75; }
 
-/* Short feedback message next to the button */
 .brief-copy-msg {
-  font-size: 12px;
   color: var(--clear);
+  font-size: 12px;
   font-weight: 600;
 }
 
@@ -794,759 +933,202 @@ details[open] .panel-details-toggle {
   color: var(--warn);
 }
 
-/* Read-only textarea showing the brief */
 .brief-textarea {
   width: 100%;
   min-height: 180px;
   max-height: 320px;
   resize: vertical;
-  background: var(--bg-panel);
+  overflow-y: auto;
+  padding: 10px 12px;
   border: 1px solid var(--border);
   border-radius: var(--radius);
+  background: rgba(14, 24, 42, 0.85);
   color: var(--text);
   font-family: ui-monospace, 'Cascadia Code', 'Fira Code', monospace;
   font-size: 12px;
   line-height: 1.6;
-  padding: 10px 12px;
-  overflow-y: auto;
-  /* textarea value set via .value only — never innerHTML */
 }
+
 .brief-textarea:focus {
   outline: 2px solid #2563eb;
   outline-offset: 1px;
 }
 
-@media (max-width: 767px) {
-  .brief-panel-inner {
-    padding: 12px 14px 16px;
-  }
-  .brief-textarea {
-    min-height: 140px;
-    font-size: 11px;
-  }
-}
-/* ── Snowy North Pole Glass + Norway Aurora Sky Lights ───────────────────── */
-:root {
-  --bg: #060b14;
-  --bg-panel: linear-gradient(165deg, rgba(20, 34, 56, 0.78) 0%, rgba(10, 18, 32, 0.88) 100%);
-  --bg-header: rgba(8, 15, 28, 0.84);
-  --border: rgba(186, 230, 253, 0.22);
-  --text: #f0f9ff;
-  --text-muted: #94b8d0;
-  --accent: #38bdf8;
-  --nearby: #fb7185;
-  --clear: #10f5c0;
-  --warn: #fbbf24;
-  --radius: 16px;
-}
-
-@keyframes aurora-drift {
-  0%, 100% { background-position: 0% 50%; }
-  50% { background-position: 100% 50%; }
-}
-
-@keyframes polar-beacon {
-  0%, 100% { box-shadow: 0 0 16px rgba(16, 245, 192, 0.45), 0 0 0 0 rgba(56, 189, 248, 0.35); }
-  50% { box-shadow: 0 0 28px rgba(56, 189, 248, 0.7), 0 0 0 6px rgba(16, 245, 192, 0); }
-}
-
-body {
-  background:
-    radial-gradient(ellipse 90% 42% at 25% -8%, rgba(16, 245, 192, 0.22), transparent 62%),
-    radial-gradient(ellipse 75% 45% at 78% -6%, rgba(139, 92, 246, 0.26), transparent 60%),
-    radial-gradient(circle at 50% 100%, rgba(56, 189, 248, 0.12), transparent 55%),
-    #060b14;
-  color: var(--text);
-  font-variant-numeric: tabular-nums;
-}
-
-/* Frosted ice-glass header with Norway Aurora top shimmer */
-.app-header {
-  height: 64px;
-  padding: 0 20px;
-  background: var(--bg-header);
-  backdrop-filter: blur(22px) saturate(140%);
-  -webkit-backdrop-filter: blur(22px) saturate(140%);
-  border-bottom: 1px solid rgba(186, 230, 253, 0.24);
-  box-shadow: 0 8px 32px rgba(2, 6, 16, 0.7), inset 0 1px 0 rgba(224, 242, 254, 0.28);
-}
-
-.radar-icon {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 38px;
-  height: 38px;
-  border-radius: 12px;
-  background: linear-gradient(135deg, rgba(16, 245, 192, 0.28), rgba(56, 189, 248, 0.25));
-  border: 1px solid rgba(186, 230, 253, 0.48);
-  font-size: 19px;
-  animation: polar-beacon 3s ease-in-out infinite;
-}
-
-h1 {
-  font-size: 19px;
-  font-weight: 800;
-  letter-spacing: -0.02em;
-  background: linear-gradient(90deg, #ffffff 0%, #bae6fd 50%, #6ee7b7 100%);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-}
-
-.sim-banner {
-  background: linear-gradient(90deg, #0d9488, #0284c7, #7c3aed, #0d9488);
-  background-size: 220% 220%;
-  animation: aurora-drift 8s ease infinite;
-  border-bottom: 1px solid rgba(224, 242, 254, 0.35);
-  font-size: 12px;
-  font-weight: 800;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-  padding: 10px 16px;
-}
-
-/* Frosted snow-crystal pill buttons */
-.btn {
-  border-radius: 9999px;
-  padding: 0 18px;
-  font-weight: 700;
-  border: 1px solid rgba(224, 242, 254, 0.32);
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.35), 0 6px 18px rgba(2, 6, 16, 0.45);
-  transition: transform 0.14s ease, box-shadow 0.18s ease;
-}
-.btn:hover { transform: translateY(-1px); }
-
-.btn-stack,
-.btn-copy-brief {
-  background: linear-gradient(180deg, rgba(56, 189, 248, 0.85) 0%, rgba(14, 116, 144, 0.92) 100%);
-  color: #ffffff;
-}
-.btn-stack:hover,
-.btn-copy-brief:hover,
-.btn-stack[aria-expanded="true"] {
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.45), 0 0 24px rgba(56, 189, 248, 0.6);
-}
-
-.btn-warn {
-  background: linear-gradient(180deg, #fb7185 0%, #e11d48 100%);
-  color: #ffffff;
-}
-.btn-clear {
-  background: linear-gradient(180deg, #10f5c0 0%, #059669 100%);
-  color: #022c22;
-}
-
-/* Arctic snow-glass panels & Aurora border glow */
-.map-pane {
-  background:
-    radial-gradient(ellipse 75% 45% at 50% 10%, rgba(16, 245, 192, 0.16), transparent 60%),
-    radial-gradient(circle at 50% 50%, rgba(56, 189, 248, 0.18) 0%, #050912 74%);
-}
-
-.sidebar {
-  background: rgba(8, 15, 28, 0.82);
-  border-left: 1px solid rgba(186, 230, 253, 0.2);
-  padding: 14px;
-  gap: 12px;
-}
-
-.panel,
-.checklist-card {
-  background: var(--bg-panel);
-  backdrop-filter: blur(20px) saturate(135%);
-  -webkit-backdrop-filter: blur(20px) saturate(135%);
-  border: 1px solid rgba(186, 230, 253, 0.24);
-  border-left: 3px solid #10f5c0;
-  border-radius: 16px;
-  padding: 14px 16px;
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.14), 0 10px 30px rgba(2, 6, 16, 0.5);
-}
-
-.panel-source {
-  font-size: 12.5px;
-  letter-spacing: 0.08em;
-  color: #e0f2fe;
-}
-
-.component-item {
-  padding: 6px 10px;
-  border-radius: 10px;
-  background: rgba(224, 242, 254, 0.06);
-  border: 1px solid rgba(186, 230, 253, 0.1);
-}
-.component-status-operational {
-  color: #10f5c0;
-  background: rgba(16, 245, 192, 0.15);
-  padding: 2px 9px;
-  border-radius: 999px;
-  font-size: 11px;
-}
-
-.mystack-drawer {
-  background: rgba(10, 18, 34, 0.94);
-  backdrop-filter: blur(24px);
-  border-color: rgba(186, 230, 253, 0.3);
-}
-
-/* Live simulation narration pill over the 3D globe */
-.sim-narration {
-  position: absolute;
-  left: 14px;
-  right: 14px;
-  bottom: 14px;
-  z-index: 420;
-  padding: 10px 14px;
-  border-radius: 14px;
-  background: rgba(10, 20, 38, 0.88);
-  backdrop-filter: blur(20px);
-  -webkit-backdrop-filter: blur(20px);
-  border: 1px solid rgba(16, 245, 192, 0.45);
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.18), 0 8px 28px rgba(2, 6, 16, 0.7);
-  color: #ecfdf5;
-  font-size: 12px;
-  font-weight: 600;
-  text-align: center;
-}
-
-.checklist-panel,
-.brief-panel {
-  background: #060b14;
-  border-top: 1px solid rgba(186, 230, 253, 0.2);
-}
-.brief-textarea {
-  background: rgba(14, 24, 42, 0.85);
-  border: 1px solid rgba(186, 230, 253, 0.26);
-  border-radius: 14px;
-  color: #e0f2fe;
-}
-/* ── Force Explicit 3D Canvas Height on Mobile & Desktop ─────────────────── */
-#map {
-  width: 100% !important;
-  height: 100% !important;
-  min-height: 380px !important;
-  position: relative;
-}
-#map canvas {
-  display: block !important;
-  width: 100% !important;
-  height: 100% !important;
-}
-
-/* ── Force Explicit 3D Canvas Height on Mobile & Desktop ─────────────────── */
-#map {
-  width: 100% !important;
-  height: 100% !important;
-  min-height: 380px !important;
-  position: relative;
-}
-#map canvas {
-  display: block !important;
-  width: 100% !important;
-  height: 100% !important;
-}
-
-
 /* ==========================================================
-   FAILOVER RADAR — FIXED EARTH / DEEP SPACE MOBILE EXPERIENCE
-   Append this block after the existing stylesheet.
+   MOBILE / PORTRAIT LAYOUT
    ========================================================== */
 
-.globe-canvas {
-  display: block;
-  width: 100%;
-  height: 100%;
-  outline: none;
-  touch-action: none;
-}
-
-.map-pane {
-  isolation: isolate;
-  overflow: hidden;
-  background:
-    radial-gradient(ellipse at 50% 42%,
-      rgba(17, 71, 112, 0.18),
-      transparent 58%),
-    radial-gradient(ellipse at 50% 100%,
-      rgba(3, 15, 32, 0.5),
-      transparent 65%),
-    #030812;
-}
-
-#map {
-  position: relative;
-  width: 100%;
-  height: 100%;
-  min-height: 380px;
-  overflow: hidden;
-  background: transparent;
-}
-
-#map canvas {
-  display: block;
-  width: 100%;
-  height: 100%;
-}
-
-.globe-loading {
-  position: absolute;
-  inset: 0;
-  display: grid;
-  place-items: center;
-  color: rgba(186, 230, 253, 0.78);
-  font-size: 11px;
-  font-weight: 800;
-  letter-spacing: 0.18em;
-  pointer-events: none;
-}
-
-/* Keep the top controls above the fixed globe. */
-.app-header {
-  position: sticky;
-  top: 0;
-  z-index: 100;
-}
-
-/* Smooth, glass-like dashboard panels. */
-.panel,
-.checklist-card,
-.brief-panel-inner {
-  backdrop-filter: blur(22px) saturate(145%);
-  -webkit-backdrop-filter: blur(22px) saturate(145%);
-}
-
-/* Phone layout: the Earth stays fixed while content scrolls over it. */
-@media (max-width: 760px) {
-
-  html,
-  body {
-    min-height: 100%;
-    overflow-x: hidden;
-  }
-
-  body {
-    position: relative;
-    background: #030812;
-  }
-
-  .app-header {
-    height: 64px;
-    min-height: 64px;
-    padding-left: 12px;
-    padding-right: 12px;
-    gap: 8px;
-    background: rgba(5, 12, 25, 0.91);
-    border-bottom: 1px solid rgba(125, 211, 252, 0.2);
-    backdrop-filter: blur(24px) saturate(150%);
-    -webkit-backdrop-filter: blur(24px) saturate(150%);
-  }
-
-  .header-title {
-    min-width: 0;
-    gap: 8px;
-  }
-
-  .header-title h1 {
-    font-size: 17px;
-    white-space: nowrap;
-  }
-
-  .radar-icon {
-    width: 34px;
-    height: 34px;
-    flex: 0 0 34px;
-  }
-
-  .header-controls {
-    gap: 7px;
-  }
-
-  .header-controls .btn {
-    min-height: 40px;
-    padding: 0 13px;
-    font-size: 12px;
-    white-space: nowrap;
-  }
-
-  /*
-    The map is fixed behind the scrolling dashboard.
-    It does not move when the user scrolls the page.
-  */
+@media (max-width: 767px) {
   .app-main {
-    display: block !important;
-    position: relative;
+    display: flex;
+    flex-direction: column;
     width: 100%;
-    min-height: 100%;
-    padding-top: calc(100svh - 64px);
-    padding-top: calc(100dvh - 64px);
+    height: auto;
+    min-height: 0;
   }
 
   .map-pane {
-    position: fixed !important;
-    top: 64px;
-    left: 0;
-    right: 0;
     width: 100%;
-    height: calc(100svh - 64px);
-    height: calc(100dvh - 64px);
-    min-height: 0 !important;
-    z-index: 0;
-    border: 0;
-    overflow: hidden;
-    pointer-events: auto;
+    height: clamp(360px, 58svh, 600px);
+    min-height: 360px;
+    max-height: 600px;
+    border-right: 0;
+    border-bottom: 1px solid var(--border);
   }
 
   #map {
     width: 100%;
     height: 100%;
-    min-height: 0 !important;
-  }
-
-  .sidebar {
-    position: relative;
-    z-index: 2;
-    display: flex;
-    width: 100%;
-    min-width: 0;
-    padding: 18px 12px 22px;
-    gap: 13px;
-    background:
-      linear-gradient(
-        180deg,
-        rgba(5, 12, 25, 0.68),
-        rgba(5, 12, 25, 0.88) 12%,
-        rgba(5, 12, 25, 0.94)
-      );
-    border: 0;
-    border-top: 1px solid rgba(125, 211, 252, 0.18);
-    border-radius: 22px 22px 0 0;
-    box-shadow: 0 -12px 38px rgba(0, 0, 0, 0.2);
-  }
-
-  .panel {
-    background: rgba(8, 19, 36, 0.78);
-    border: 1px solid rgba(148, 190, 220, 0.2);
-    border-left: 3px solid rgba(16, 245, 192, 0.88);
-    box-shadow:
-      inset 0 1px 0 rgba(255, 255, 255, 0.07),
-      0 12px 28px rgba(0, 0, 0, 0.22);
-    border-radius: 17px;
-  }
-
-  .checklist-panel,
-  .brief-panel {
-    position: relative;
-    z-index: 2;
-    width: 100%;
-    background: rgba(5, 12, 25, 0.94);
-    backdrop-filter: blur(24px) saturate(145%);
-    -webkit-backdrop-filter: blur(24px) saturate(145%);
-    border-top: 1px solid rgba(125, 211, 252, 0.18);
-  }
-
-  .checklist-panel-inner,
-  .brief-panel-inner {
-    padding-left: 13px;
-    padding-right: 13px;
-  }
-
-  .sim-narration {
-    left: 12px;
-    right: 12px;
-    bottom: max(14px, env(safe-area-inset-bottom));
-    z-index: 5;
-    font-size: 11px;
-    line-height: 1.55;
-    background: rgba(5, 15, 30, 0.86);
-    border: 1px solid rgba(45, 212, 191, 0.55);
-    box-shadow: 0 8px 28px rgba(0, 0, 0, 0.35);
-  }
-
-  .update-error {
-    position: relative;
-    z-index: 110;
-  }
-
-  .mystack-drawer,
-  .mystack-scrim {
-    z-index: 200;
-  }
-
-  .brief-textarea {
-    width: 100%;
-    max-width: 100%;
-  }
-}
-
-/* =========================================================
-   FAILOVER RADAR — STICKY EARTH / GLASS SHEET UPDATE
-   Append this block at the VERY END of styles.css
-   ========================================================= */
-
-html {
-  scroll-behavior: smooth;
-}
-
-body {
-  overflow-x: hidden;
-}
-
-/* Keep the Earth and its separate information strip together. */
-.map-pane {
-  position: sticky;
-  top: 0;
-  z-index: 5;
-  align-self: start;
-  display: grid;
-  grid-template-rows: minmax(0, 1fr) auto;
-  gap: 0;
-  height: min(72svh, 720px);
-  min-height: 430px;
-  overflow: hidden;
-  background:
-    radial-gradient(ellipse at 50% 45%, rgba(24, 88, 130, 0.22), transparent 62%),
-    linear-gradient(180deg, #050b16 0%, #071323 100%);
-  border-bottom: 1px solid rgba(148, 210, 235, 0.16);
-}
-
-/* The actual WebGL viewport. */
-#map {
-  position: relative;
-  width: 100% !important;
-  height: 100% !important;
-  min-height: 0 !important;
-  overflow: hidden;
-  background:
-    radial-gradient(circle at 50% 48%, rgba(31, 111, 158, 0.14), transparent 55%),
-    transparent;
-  isolation: isolate;
-}
-
-#map canvas,
-#map .globe-canvas {
-  display: block !important;
-  width: 100% !important;
-  height: 100% !important;
-  touch-action: none;
-}
-
-/* Separate glass caption below the Earth. */
-.sim-narration {
-  position: relative !important;
-  inset: auto !important;
-  z-index: 2;
-  width: auto;
-  margin: 0 14px max(12px, env(safe-area-inset-bottom));
-  padding: 13px 16px;
-  border: 1px solid rgba(87, 220, 207, 0.42);
-  border-radius: 17px;
-  background: rgba(8, 19, 34, 0.86);
-  color: #eaf8ff;
-  box-shadow:
-    0 12px 32px rgba(0, 0, 0, 0.32),
-    inset 0 1px 0 rgba(255, 255, 255, 0.12);
-  -webkit-backdrop-filter: blur(22px) saturate(145%);
-  backdrop-filter: blur(22px) saturate(145%);
-  font-size: 13px;
-  line-height: 1.55;
-  font-weight: 650;
-  text-align: center;
-  pointer-events: none;
-}
-
-/* Let the panels form a glass sheet scrolling below the globe. */
-.sidebar {
-  position: relative;
-  z-index: 6;
-  background: rgba(7, 14, 27, 0.91);
-  border-top: 1px solid rgba(180, 220, 245, 0.18);
-  -webkit-backdrop-filter: blur(24px) saturate(140%);
-  backdrop-filter: blur(24px) saturate(140%);
-}
-
-/* Keep the main page content above the background without blocking touch. */
-.app-main {
-  position: relative;
-  overflow: visible;
-}
-
-/* iPhone and narrow screens. */
-@media (max-width: 760px) {
-  .app-main {
-    display: flex;
-    flex-direction: column;
-    gap: 0;
-  }
-
-  .map-pane {
-    top: 0;
-    width: 100%;
-    height: 68svh;
-    min-height: 420px;
-    max-height: 680px;
-  }
-
-  .sidebar {
-    width: 100%;
-    padding: 14px;
-    gap: 12px;
-    border-left: 0;
-    border-radius: 22px 22px 0 0;
-    margin-top: 0;
-  }
-
-  .sim-narration {
-    margin-left: 12px;
-    margin-right: 12px;
-    margin-bottom: max(10px, env(safe-area-inset-bottom));
-    font-size: 12px;
-  }
-}
-
-/* Smaller iPhones. */
-@media (max-width: 390px) {
-  .map-pane {
-    height: 65svh;
-    min-height: 390px;
-  }
-}
-
-/* Respect reduced-motion preferences. */
-@media (prefers-reduced-motion: reduce) {
-  html {
-    scroll-behavior: auto;
-  }
-}
-
-/* ==========================================================
-   FAILOVER RADAR — FULL-SCREEN EARTH LAYOUT
-   Final layout override — keep this at the VERY END
-   ========================================================== */
-
-/* Main page: Earth first, dashboard underneath */
-.app-main {
-  display: flex !important;
-  flex-direction: column !important;
-  width: 100%;
-  height: auto !important;
-  min-height: 0;
-  flex: 0 0 auto;
-  padding-top: 0 !important;
-  overflow: visible !important;
-}
-
-/* Large Earth viewport */
-.map-pane {
-  position: relative !important;
-  top: auto !important;
-  left: auto !important;
-  right: auto !important;
-  z-index: 1;
-  display: block;
-  flex: 0 0 auto;
-  width: 100%;
-  height: calc(100dvh - 64px);
-  min-height: 420px;
-  max-height: none;
-  overflow: hidden;
-  border: 0;
-  background:
-    radial-gradient(
-      ellipse at 50% 45%,
-      rgba(24, 88, 130, 0.22),
-      transparent 62%
-    ),
-    #030812;
-}
-
-/* Three.js rendering area */
-#map {
-  position: relative;
-  width: 100% !important;
-  height: 100% !important;
-  min-height: 0 !important;
-  overflow: hidden;
-  background: transparent;
-}
-
-#map canvas {
-  display: block !important;
-  width: 100% !important;
-  height: 100% !important;
-  touch-action: none;
-}
-
-/* Dashboard follows the Earth in normal page flow */
-.sidebar {
-  position: relative;
-  z-index: 2;
-  display: flex;
-  flex-direction: column;
-  width: 100%;
-  max-height: none;
-  overflow: visible;
-  padding: 18px 14px 24px;
-  gap: 13px;
-  border: 0;
-  border-top: 1px solid rgba(125, 211, 252, 0.2);
-  border-radius: 22px 22px 0 0;
-  background: rgba(7, 14, 27, 0.96);
-}
-
-/* Keep simulation narration floating over the globe */
-.sim-narration {
-  position: absolute !important;
-  left: 12px !important;
-  right: 12px !important;
-  bottom: max(14px, env(safe-area-inset-bottom)) !important;
-  top: auto !important;
-  z-index: 5;
-  margin: 0;
-  pointer-events: none;
-}
-
-/* Checklist and Incident Brief remain below the main layout */
-.checklist-panel,
-.brief-panel {
-  position: relative;
-  z-index: 2;
-  width: 100%;
-}
-
-/* Desktop: same full-screen Earth, dashboard below */
-@media (min-width: 768px) {
-  .map-pane {
-    height: calc(100dvh - 64px);
-    min-height: 520px;
-  }
-
-  .sidebar {
-    padding: 22px;
-  }
-}
-
-/* Mobile */
-@media (max-width: 767px) {
-  .app-main {
-    display: flex !important;
-    flex-direction: column !important;
-    padding-top: 0 !important;
-  }
-
-  .map-pane {
-    height: calc(100dvh - 64px);
-    min-height: 420px;
-    max-height: none;
+    min-height: 0;
   }
 
   .sidebar {
     width: 100%;
     padding: 16px 12px 22px;
+    gap: 12px;
+    overflow: visible;
+    border: 0;
+    border-top: 1px solid var(--border);
+    border-radius: 20px 20px 0 0;
+    background: rgba(7, 14, 27, 0.96);
+  }
+
+  .app-header {
+    padding: 0 12px;
+    gap: 8px;
+  }
+
+  .header-title {
+    gap: 7px;
+  }
+
+  h1 {
+    font-size: 16px;
+  }
+
+  .radar-icon {
+    width: 34px;
+    height: 34px;
+    flex-basis: 34px;
+    font-size: 17px;
+  }
+
+  .header-controls {
+    gap: 6px;
+  }
+
+  .header-controls .btn {
+    min-height: 40px;
+    padding: 0 12px;
+    font-size: 12px;
+  }
+
+  .mystack-drawer {
+    top: auto;
+    bottom: 0;
+    right: 0;
+    left: 0;
+    width: 100%;
+    max-height: 72dvh;
+    border-left: 0;
+    border-top: 1px solid var(--border);
+    border-radius: 12px 12px 0 0;
+  }
+
+  .mystack-columns {
+    grid-template-columns: 1fr;
+  }
+
+  .mystack-scrim.is-open {
+    display: block;
+  }
+
+  .checklist-panel-inner,
+  .brief-panel-inner {
+    padding: 14px 13px 18px;
+  }
+
+  .brief-textarea {
+    min-height: 140px;
+    font-size: 11px;
+  }
+
+  .sim-narration {
+    left: 10px;
+    right: 10px;
+    bottom: 10px;
+    font-size: 11px;
+    padding: 10px 12px;
   }
 }
 
-/* Shorter phones */
+/* SMALL PHONES */
 @media (max-width: 390px) {
+  .header-controls .btn {
+    padding: 0 9px;
+    font-size: 11px;
+  }
+
+  h1 {
+    font-size: 14px;
+  }
+
   .map-pane {
-    min-height: 390px;
+    height: 55svh;
+    min-height: 340px;
+  }
+
+  .panel {
+    padding: 12px;
+  }
+}
+
+/* ==========================================================
+   LANDSCAPE PHONES / SMALL DESKTOPS
+   Keep a two-column layout when there is enough width.
+   ========================================================== */
+
+@media (min-width: 768px) and (max-height: 600px) {
+  .map-pane {
+    height: 560px;
+    min-height: 560px;
+  }
+
+  .sidebar {
+    padding: 12px;
+    gap: 10px;
+  }
+
+  .panel {
+    padding: 11px 13px;
+  }
+}
+
+/* WIDE DESKTOP */
+@media (min-width: 1200px) {
+  .app-main {
+    grid-template-columns: minmax(0, 1.45fr) minmax(360px, 0.85fr);
+  }
+
+  .sidebar {
+    padding: 20px;
+    gap: 14px;
+  }
+}
+
+/* ACCESSIBILITY */
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+
+  .sim-banner {
+    animation: none;
+  }
+
+  *,
+  *::before,
+  *::after {
+    transition-duration: 0.01ms !important;
   }
 }
