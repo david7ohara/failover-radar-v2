@@ -1416,3 +1416,137 @@ body {
     scroll-behavior: auto;
   }
 }
+
+/* ==========================================================
+   FAILOVER RADAR — FULL-SCREEN EARTH LAYOUT
+   Final layout override — keep this at the VERY END
+   ========================================================== */
+
+/* Main page: Earth first, dashboard underneath */
+.app-main {
+  display: flex !important;
+  flex-direction: column !important;
+  width: 100%;
+  height: auto !important;
+  min-height: 0;
+  flex: 0 0 auto;
+  padding-top: 0 !important;
+  overflow: visible !important;
+}
+
+/* Large Earth viewport */
+.map-pane {
+  position: relative !important;
+  top: auto !important;
+  left: auto !important;
+  right: auto !important;
+  z-index: 1;
+  display: block;
+  flex: 0 0 auto;
+  width: 100%;
+  height: calc(100dvh - 64px);
+  min-height: 420px;
+  max-height: none;
+  overflow: hidden;
+  border: 0;
+  background:
+    radial-gradient(
+      ellipse at 50% 45%,
+      rgba(24, 88, 130, 0.22),
+      transparent 62%
+    ),
+    #030812;
+}
+
+/* Three.js rendering area */
+#map {
+  position: relative;
+  width: 100% !important;
+  height: 100% !important;
+  min-height: 0 !important;
+  overflow: hidden;
+  background: transparent;
+}
+
+#map canvas {
+  display: block !important;
+  width: 100% !important;
+  height: 100% !important;
+  touch-action: none;
+}
+
+/* Dashboard follows the Earth in normal page flow */
+.sidebar {
+  position: relative;
+  z-index: 2;
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  max-height: none;
+  overflow: visible;
+  padding: 18px 14px 24px;
+  gap: 13px;
+  border: 0;
+  border-top: 1px solid rgba(125, 211, 252, 0.2);
+  border-radius: 22px 22px 0 0;
+  background: rgba(7, 14, 27, 0.96);
+}
+
+/* Keep simulation narration floating over the globe */
+.sim-narration {
+  position: absolute !important;
+  left: 12px !important;
+  right: 12px !important;
+  bottom: max(14px, env(safe-area-inset-bottom)) !important;
+  top: auto !important;
+  z-index: 5;
+  margin: 0;
+  pointer-events: none;
+}
+
+/* Checklist and Incident Brief remain below the main layout */
+.checklist-panel,
+.brief-panel {
+  position: relative;
+  z-index: 2;
+  width: 100%;
+}
+
+/* Desktop: same full-screen Earth, dashboard below */
+@media (min-width: 768px) {
+  .map-pane {
+    height: calc(100dvh - 64px);
+    min-height: 520px;
+  }
+
+  .sidebar {
+    padding: 22px;
+  }
+}
+
+/* Mobile */
+@media (max-width: 767px) {
+  .app-main {
+    display: flex !important;
+    flex-direction: column !important;
+    padding-top: 0 !important;
+  }
+
+  .map-pane {
+    height: calc(100dvh - 64px);
+    min-height: 420px;
+    max-height: none;
+  }
+
+  .sidebar {
+    width: 100%;
+    padding: 16px 12px 22px;
+  }
+}
+
+/* Shorter phones */
+@media (max-width: 390px) {
+  .map-pane {
+    min-height: 390px;
+  }
+}
