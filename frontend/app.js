@@ -489,7 +489,6 @@ function renderPanels(data) {
 
 function renderAll(data) {
   renderPanels(data);
-  updateGlobe(data);
 }
 
 // ─── Radar fetch and polling ──────────────────────────────────────────────────
