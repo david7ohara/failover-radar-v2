@@ -7,7 +7,6 @@
   const hud = document.getElementById('sim-narration');
   if (!box || typeof Globe === 'undefined') return;
 
-  // Procedural Arctic Aurora Earth texture with glowing continents & latitude/longitude grid
   function makeArcticTexture() {
     const c = document.createElement('canvas');
     c.width = 1024;
@@ -23,7 +22,6 @@
     ctx.fillStyle = grad;
     ctx.fillRect(0, 0, 1024, 512);
 
-    // Latitude / longitude radar grid
     ctx.strokeStyle = 'rgba(56, 189, 248, 0.24)';
     ctx.lineWidth = 1;
     for (let x = 0; x <= 1024; x += 32) {
@@ -33,49 +31,34 @@
       ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(1024, y); ctx.stroke();
     }
 
-    // Glowing equator & Arctic/Antarctic circles
-    ctx.strokeStyle = 'rgba(16, 245, 192, 0.52)';
+    // Glowing Arctic, Equator, and Antarctic rings
+    ctx.strokeStyle = 'rgba(16, 245, 192, 0.55)';
     ctx.lineWidth = 2;
-    const parallels =;
-    for (let i = 0; i < parallels.length; i++) {
-      const y = parallels[i];
-      ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(1024, y); ctx.stroke();
-    }
+    ctx.beginPath(); ctx.moveTo(0, 68); ctx.lineTo(1024, 68); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(0, 256); ctx.lineTo(1024, 256); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(0, 444); ctx.lineTo(1024, 444); ctx.stroke();
 
-    // Stylized glowing continent silhouettes (lon/lat mapped to 1024x512)
-    const land = [
-      // North America
-      [[-165,68],[-130,70],[-80,68],[-60,48],[-80,25],[-105,20],[-125,38],[-145,60]],
-      // South America
-      [[-80,10],[-50,0],[-36,-10],[-42,-28],[-66,-54],[-76,-42],[-80,-5]],
-      // Europe
-      [[-10,36],[5,44],[12,56],[28,70],[55,66],[45,42],[24,36],[0,36]],
-      // Africa
-      [[-16,32],[12,36],[34,30],[50,10],[40,-26],[20,-34],[12,-16],[6,4],[-16,14]],
-      // Asia
-      [[45,42],[60,72],[135,70],[170,64],[142,42],[122,24],[104,2],[78,8],[66,24],[45,32]],
-      // Japan & SE Asia islands
-      [[130,31],[145,44],[142,35],[132,31]],
-      // Australia
-      [[114,-22],[134,-12],[152,-26],[146,-38],[116,-34]]
-    ];
+    // Glowing Aurora-emerald continental silhouettes
+    ctx.fillStyle = 'rgba(16, 245, 192, 0.22)';
+    ctx.strokeStyle = 'rgba(56, 189, 248, 0.8)';
+    ctx.lineWidth = 1.8;
 
-    ctx.fillStyle = 'rgba(16, 245, 192, 0.16)';
-    ctx.strokeStyle = 'rgba(56, 189, 248, 0.72)';
-    ctx.lineWidth = 1.6;
-    for (let i = 0; i < land.length; i++) {
-      const poly = land[i];
+    function drawLand(lon, lat, rx, ry, rot) {
+      const x = ((lon + 180) / 360) * 1024;
+      const y = ((90 - lat) / 180) * 512;
       ctx.beginPath();
-      for (let j = 0; j < poly.length; j++) {
-        const px = ((poly[j][0] + 180) / 360) * 1024;
-        const py = ((90 - poly[j][1]) / 180) * 512;
-        if (j === 0) ctx.moveTo(px, py);
-        else ctx.lineTo(px, py);
-      }
-      ctx.closePath();
+      ctx.ellipse(x, y, rx, ry, rot || 0, 0, Math.PI * 2);
       ctx.fill();
       ctx.stroke();
     }
+
+    drawLand(-100, 45, 68, 42, -0.2);   // North America
+    drawLand(-60, -18, 34, 58, 0.25);   // South America
+    drawLand(16, 50, 42, 24, -0.1);     // Europe
+    drawLand(20, 4, 42, 54, 0.1);       // Africa
+    drawLand(92, 46, 95, 48, 0.08);     // Asia
+    drawLand(139, 36, 10, 22, 0.5);     // Japan
+    drawLand(134, -25, 36, 24, 0.15);   // Australia
 
     return c.toDataURL('image/png');
   }
@@ -102,10 +85,8 @@
   globe.pointOfView({ lat: 24, lng: 18, altitude: 2.0 }, 0);
 
   const fit = () => {
-    const w = box.clientWidth || window.innerWidth;
-    const h = box.clientHeight || 390;
-    globe.width(w);
-    globe.height(h);
+    globe.width(box.clientWidth || window.innerWidth);
+    globe.height(box.clientHeight || 390);
   };
   fit();
   setTimeout(fit, 250);
@@ -187,7 +168,7 @@
       if (hud) {
         if (sim || active) {
           const altReg = active?.nearest_alternative && byId[active.nearest_alternative.id];
-          const q0 = active?.nearby_quakes && active.nearby_quakes[0];
+          const q0 = active?.nearby_quakes?.at(0);
           const eventStr = q0 ? `M${q0.magnitude} quake (${q0.distance_km} km)` : 'Seismic event';
           const destStr = altReg ? `${altReg.label} (${altReg.id})` : 'nearest region';
           hud.textContent = `${sim ? 'SIMULATION · ' : 'ALERT · '}${eventStr} nearby ${active?.label || 'Tokyo'} — rerouting illustrative failover traffic → ${destStr}`;
