@@ -580,7 +580,7 @@
       : 'Nearby seismic event';
 
     const destination = alternative
-      ? alternative.label + ' (' + alternative.id + ')'
+      ? alternative.label
       : 'nearest alternative';
 
     hud.textContent =
