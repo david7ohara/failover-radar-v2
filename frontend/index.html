@@ -3,10 +3,10 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
   <meta name="theme-color" content="#060b14" />
   <title>Failover Radar</title>
-  <link rel="stylesheet" href="/styles.css?v=10" />
+  <link rel="stylesheet" href="/styles.css?v=11" />
 </head>
 <body>
 
@@ -19,11 +19,18 @@
       <span class="radar-icon" aria-hidden="true">📡</span>
       <h1>Failover Radar</h1>
     </div>
+
     <div class="header-controls">
       <button id="btn-mystack" class="btn btn-stack" type="button"
         aria-expanded="false" aria-controls="mystack-drawer">My Stack</button>
-      <button id="btn-simulate" class="btn btn-warn" type="button">Simulate</button>
-      <button id="btn-clear" class="btn btn-clear" type="button" hidden>Clear</button>
+
+      <button id="btn-simulate" class="btn btn-warn" type="button">
+        Simulate
+      </button>
+
+      <button id="btn-clear" class="btn btn-clear" type="button" hidden>
+        Clear
+      </button>
     </div>
   </header>
 
@@ -33,26 +40,38 @@
 
   <div id="mystack-drawer" class="mystack-drawer"
     aria-label="My Stack filter" hidden>
+
     <div class="mystack-drawer-inner">
       <div class="mystack-drawer-header">
         <span class="mystack-drawer-title">My Stack</span>
-        <button id="btn-mystack-close" class="btn btn-ghost mystack-close-btn"
+
+        <button id="btn-mystack-close"
+          class="btn btn-ghost mystack-close-btn"
           type="button" aria-label="Close My Stack">✕</button>
       </div>
+
       <p class="mystack-hint">
         Pick the regions and providers you use. Saved in this browser only — never sent to the server.
       </p>
-      <div id="mystack-banner" class="mystack-banner" aria-live="polite"></div>
-      <div id="mystack-advice" class="mystack-advice" hidden aria-live="polite"></div>
+
+      <div id="mystack-banner" class="mystack-banner"
+        aria-live="polite"></div>
+
+      <div id="mystack-advice" class="mystack-advice"
+        hidden aria-live="polite"></div>
+
       <div class="mystack-columns">
         <fieldset class="mystack-fieldset">
           <legend class="mystack-legend">Cloud regions</legend>
+
           <div id="mystack-region-list" class="mystack-checklist">
             <span class="mystack-loading">Loading regions…</span>
           </div>
         </fieldset>
+
         <fieldset class="mystack-fieldset">
           <legend class="mystack-legend">SaaS providers</legend>
+
           <div id="mystack-provider-list" class="mystack-checklist">
             <span class="mystack-loading">Loading providers…</span>
           </div>
@@ -61,40 +80,63 @@
     </div>
   </div>
 
-  <div id="mystack-scrim" class="mystack-scrim" hidden aria-hidden="true"></div>
+  <div id="mystack-scrim" class="mystack-scrim"
+    hidden aria-hidden="true"></div>
 
   <main class="app-main">
+
     <section class="map-pane" aria-label="3D seismic and region globe">
-      <div id="map" role="img" aria-label="Interactive 3D Earth showing radar regions, earthquakes and failover routes">
-        <div class="globe-loading">INITIALIZING EARTH RADAR…</div>
+      <div id="map" role="img"
+        aria-label="Interactive 3D Earth showing radar regions, earthquakes and failover routes">
+
+        <div class="globe-loading">
+          INITIALIZING EARTH RADAR…
+        </div>
       </div>
-      <div id="sim-narration" class="sim-narration" aria-live="polite" hidden></div>
+
+      <div id="sim-narration" class="sim-narration"
+        aria-live="polite" hidden></div>
     </section>
 
     <aside class="sidebar">
-      <section class="panel" id="panel-usgs" aria-label="USGS feed status">
+
+      <section class="panel" id="panel-usgs"
+        aria-label="USGS feed status">
+
         <details open>
           <summary class="panel-summary">
             <span class="panel-source">USGS Earthquakes</span>
             <span class="stale-badge" id="stale-usgs" hidden>STALE</span>
             <span class="panel-details-toggle" aria-hidden="true">▶</span>
           </summary>
+
           <div class="panel-details-body">
-            <p class="panel-meta">Last updated: <span id="usgs-last-updated">—</span></p>
+            <p class="panel-meta">
+              Last updated:
+              <span id="usgs-last-updated">—</span>
+            </p>
+
             <p class="panel-detail" id="usgs-count">—</p>
           </div>
         </details>
       </section>
 
-      <section class="panel" id="panel-github" aria-label="GitHub status">
+      <section class="panel" id="panel-github"
+        aria-label="GitHub status">
+
         <details>
           <summary class="panel-summary">
             <span class="panel-source" id="github-source">GitHub</span>
             <span class="stale-badge" id="stale-github" hidden>STALE</span>
             <span class="panel-details-toggle" aria-hidden="true">▶</span>
           </summary>
+
           <div class="panel-details-body">
-            <p class="panel-meta">Last updated: <span id="github-last-updated">—</span></p>
+            <p class="panel-meta">
+              Last updated:
+              <span id="github-last-updated">—</span>
+            </p>
+
             <p class="panel-detail" id="github-description">—</p>
             <ul class="component-list" id="github-components"></ul>
             <ul class="incident-list" id="github-incidents"></ul>
@@ -102,15 +144,22 @@
         </details>
       </section>
 
-      <section class="panel" id="panel-cloudflare" aria-label="Cloudflare status">
+      <section class="panel" id="panel-cloudflare"
+        aria-label="Cloudflare status">
+
         <details>
           <summary class="panel-summary">
             <span class="panel-source" id="cloudflare-source">Cloudflare</span>
             <span class="stale-badge" id="stale-cloudflare" hidden>STALE</span>
             <span class="panel-details-toggle" aria-hidden="true">▶</span>
           </summary>
+
           <div class="panel-details-body">
-            <p class="panel-meta">Last updated: <span id="cloudflare-last-updated">—</span></p>
+            <p class="panel-meta">
+              Last updated:
+              <span id="cloudflare-last-updated">—</span>
+            </p>
+
             <p class="panel-detail" id="cloudflare-description">—</p>
             <ul class="component-list" id="cloudflare-components"></ul>
             <ul class="incident-list" id="cloudflare-incidents"></ul>
@@ -118,20 +167,28 @@
         </details>
       </section>
 
-      <section class="panel panel-attribution" aria-label="Data attribution">
+      <section class="panel panel-attribution"
+        aria-label="Data attribution">
+
         <p class="attribution-text">
           Seismic data:
-          <a href="https://usgs.gov" target="_blank" rel="noopener noreferrer">USGS Earthquake Hazards Program</a>
+          <a href="https://usgs.gov" target="_blank"
+            rel="noopener noreferrer">
+            USGS Earthquake Hazards Program
+          </a>
         </p>
+
         <p class="attribution-text">
           3D globe: Three.js · Earth imagery: Three.js planet texture
         </p>
       </section>
+
     </aside>
   </main>
 
   <section id="checklist-panel" class="checklist-panel"
     aria-label="Operator checklist" hidden>
+
     <div class="checklist-panel-inner">
       <h2 class="checklist-panel-heading">Operator Checklist</h2>
       <p class="checklist-label-badge">Template checklist</p>
@@ -139,28 +196,37 @@
     </div>
   </section>
 
-  <section id="brief-panel" class="brief-panel" aria-label="Incident brief">
+  <section id="brief-panel" class="brief-panel"
+    aria-label="Incident brief">
+
     <div class="brief-panel-inner">
       <div class="brief-panel-header">
         <h2 class="brief-panel-heading">Incident Brief</h2>
-        <button id="btn-copy-brief" class="btn btn-copy-brief"
+
+        <button id="btn-copy-brief"
+          class="btn btn-copy-brief"
           type="button" aria-label="Copy incident brief">
           Copy incident brief
         </button>
+
         <span id="brief-copy-msg" class="brief-copy-msg"
           aria-live="polite" hidden></span>
       </div>
-      <textarea id="brief-textarea" class="brief-textarea" readonly
+
+      <textarea id="brief-textarea" class="brief-textarea"
+        readonly
         aria-label="Incident brief text — select all and copy if button fails"
         spellcheck="false"></textarea>
     </div>
   </section>
 
-  <!-- Three.js global build, followed by our globe and dashboard code. -->
+  <!-- Three.js must load before globe.js. -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+
   <script src="/stack.js"></script>
   <script src="/brief.js"></script>
-  <script src="/globe.js?v=2"></script>
-  <script src="/app.js?v=16"></script>
+  <script src="/globe.js?v=3"></script>
+  <script src="/app.js?v=17"></script>
+
 </body>
 </html>
