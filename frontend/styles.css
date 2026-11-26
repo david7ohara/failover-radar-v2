@@ -927,3 +927,15 @@ h1 {
 .leaflet-control-attribution a { color: #a78bfa !important; }
 .checklist-panel, .brief-panel { background: #0c0a12; border-top: 1px solid rgba(139, 110, 255, 0.22); }
 .brief-textarea { background: #141120; border: 1px solid rgba(139, 110, 255, 0.28); border-radius: 14px; color: #ede9fe; }
+
+/* ── 3D Globe Canvas & Live Simulation Narration Pill ──────────────────── */
+.map-pane { background: radial-gradient(circle at 50% 45%, rgba(109, 74, 255, 0.24) 0%, #090710 72%); }
+.leaflet-pane, .leaflet-control-container { display: none !important; }
+.sim-narration {
+  position: absolute; left: 14px; right: 14px; bottom: 14px; z-index: 420;
+  padding: 10px 14px; border-radius: 14px;
+  background: rgba(17, 13, 30, 0.92); backdrop-filter: blur(18px);
+  border: 1px solid rgba(139, 110, 255, 0.48);
+  box-shadow: 0 8px 28px rgba(0, 0, 0, 0.65), 0 0 20px rgba(109, 74, 255, 0.3);
+  color: #f3e8ff; font-size: 12px; font-weight: 600; text-align: center;
+}
