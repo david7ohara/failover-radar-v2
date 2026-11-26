@@ -1,5 +1,9 @@
 'use strict';
 (function () {
+  // Let existing app.js run cleanly without Leaflet
+  const noop = new Proxy(function () {}, { get: () => noop, apply: () => noop });
+  window.L = noop;
+
   const box = document.getElementById('map');
   const hud = document.getElementById('sim-narration');
   if (!box || typeof Globe === 'undefined') return;
@@ -108,7 +112,7 @@
       if (hud) {
         if (sim || active) {
           const altReg = active?.nearest_alternative && byId[active.nearest_alternative.id];
-          const q0 = active?.nearby_quakes?.[0];
+          const q0 = active?.nearby_quakes?.at(0);
           const eventStr = q0 ? `M${q0.magnitude} quake (${q0.distance_km} km)` : 'Seismic event';
           const destStr = altReg ? `${altReg.label} (${altReg.id})` : 'nearest region';
           hud.textContent = `${sim ? 'SIMULATION · ' : 'ALERT · '}${eventStr} nearby ${active?.label || 'Tokyo'} — rerouting illustrative failover traffic → ${destStr}`;
