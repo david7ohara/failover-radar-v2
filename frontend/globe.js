@@ -5,24 +5,22 @@
   const box = document.getElementById('map');
   const hud = document.getElementById('sim-narration');
 
-  if (!box) return;
-
-  if (typeof THREE === 'undefined') {
-    box.textContent = '3D globe could not load. Check your internet connection and refresh.';
+  if (!box || typeof THREE === 'undefined') {
+    if (box) {
+      box.textContent = '3D globe could not load. Refresh the page and check your connection.';
+    }
     return;
   }
 
-  const loading = box.querySelector('.globe-loading');
-  if (loading) loading.remove();
-
-  // ------------------------------------------------------------
-  // SCENE
-  // ------------------------------------------------------------
+  const oldLoading = box.querySelector('.globe-loading');
+  if (oldLoading) oldLoading.remove();
 
   const scene = new THREE.Scene();
 
   const camera = new THREE.PerspectiveCamera(38, 1, 0.1, 100);
-  camera.position.set(0, 0, 3.35);
+  const normalCameraZ = 3.25;
+  const simulationCameraZ = 3.95;
+  camera.position.set(0, 0, normalCameraZ);
 
   let renderer;
 
@@ -33,105 +31,79 @@
       powerPreference: 'high-performance'
     });
   } catch (_) {
-    box.textContent = 'This browser could not initialize WebGL.';
+    box.textContent = 'This browser could not initialize the 3D globe.';
     return;
   }
 
-  const isMobile = window.matchMedia('(max-width: 760px)').matches;
-
-  renderer.setPixelRatio(
-    Math.min(window.devicePixelRatio || 1, isMobile ? 1.35 : 1.7)
-  );
-
+  renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 1.5));
   renderer.setClearColor(0x000000, 0);
-  renderer.outputEncoding = THREE.sRGBEncoding;
   renderer.domElement.className = 'globe-canvas';
   renderer.domElement.style.display = 'block';
   renderer.domElement.style.width = '100%';
   renderer.domElement.style.height = '100%';
   renderer.domElement.style.touchAction = 'none';
-
   box.appendChild(renderer.domElement);
 
   const root = new THREE.Group();
+  root.rotation.x = 0.18;
   scene.add(root);
 
   const earthRadius = 1;
-
   const dynamicGroup = new THREE.Group();
   root.add(dynamicGroup);
 
-  // ------------------------------------------------------------
-  // LIGHTING
-  // ------------------------------------------------------------
+  // Lighting: bright daylight with a restrained cool fill.
+  scene.add(new THREE.AmbientLight(0xc6dcf5, 1.05));
 
-  scene.add(new THREE.AmbientLight(0x9bbbd2, 0.72));
-
-  const sunlight = new THREE.DirectionalLight(0xffffff, 1.65);
-  sunlight.position.set(4, 2, 5);
+  const sunlight = new THREE.DirectionalLight(0xffffff, 2.0);
+  sunlight.position.set(4, 2.5, 5);
   scene.add(sunlight);
 
-  const blueFill = new THREE.DirectionalLight(0x287dbb, 0.28);
-  blueFill.position.set(-4, -1, -4);
-  scene.add(blueFill);
+  const fillLight = new THREE.DirectionalLight(0x4bbfff, 0.42);
+  fillLight.position.set(-4, -1, -3);
+  scene.add(fillLight);
 
-  // ------------------------------------------------------------
-  // STARFIELD — positioned behind the Earth
-  // ------------------------------------------------------------
+  // Stars sit behind Earth and do not rotate with the globe.
+  function createStars() {
+    const positions = [];
+    let seed = 92741;
 
-  function createStarfield() {
-    const count = isMobile ? 650 : 1100;
-    const positions = new Float32Array(count * 3);
-    const sizes = new Float32Array(count);
+    function random() {
+      seed = (seed * 16807) % 2147483647;
+      return (seed - 1) / 2147483646;
+    }
 
-    for (let i = 0; i < count; i++) {
-      const radius = 5 + Math.random() * 9;
-      const theta = Math.random() * Math.PI * 2;
-      const phi = Math.acos(2 * Math.random() - 1);
+    for (let i = 0; i < 850; i++) {
+      const u = random() * 2 - 1;
+      const angle = random() * Math.PI * 2;
+      const radius = 8 + random() * 12;
+      const ring = Math.sqrt(1 - u * u);
 
-      positions[i * 3] =
-        radius * Math.sin(phi) * Math.cos(theta);
-
-      positions[i * 3 + 1] =
-        radius * Math.cos(phi);
-
-      positions[i * 3 + 2] =
-        radius * Math.sin(phi) * Math.sin(theta);
-
-      sizes[i] = 0.45 + Math.random() * 1.25;
+      positions.push(
+        radius * ring * Math.cos(angle),
+        radius * u,
+        radius * ring * Math.sin(angle)
+      );
     }
 
     const geometry = new THREE.BufferGeometry();
     geometry.setAttribute(
       'position',
-      new THREE.BufferAttribute(positions, 3)
-    );
-
-    geometry.setAttribute(
-      'size',
-      new THREE.BufferAttribute(sizes, 1)
+      new THREE.Float32BufferAttribute(positions, 3)
     );
 
     const material = new THREE.PointsMaterial({
-      color: 0xd7edff,
-      size: 0.018,
+      color: 0xc8e8ff,
+      size: 0.035,
       transparent: true,
-      opacity: 0.78,
-      sizeAttenuation: true,
-      depthWrite: false
+      opacity: 0.72,
+      sizeAttenuation: true
     });
 
-    const stars = new THREE.Points(geometry, material);
-    scene.add(stars);
-
-    return stars;
+    scene.add(new THREE.Points(geometry, material));
   }
 
-  const stars = createStarfield();
-
-  // ------------------------------------------------------------
-  // EARTH TEXTURE
-  // ------------------------------------------------------------
+  createStars();
 
   function makeFallbackTexture() {
     const canvas = document.createElement('canvas');
@@ -139,16 +111,16 @@
     canvas.height = 512;
 
     const ctx = canvas.getContext('2d');
-
     const ocean = ctx.createLinearGradient(0, 0, 0, 512);
-    ocean.addColorStop(0, '#153b56');
-    ocean.addColorStop(0.5, '#071a2c');
-    ocean.addColorStop(1, '#102b43');
+
+    ocean.addColorStop(0, '#174768');
+    ocean.addColorStop(0.5, '#09243b');
+    ocean.addColorStop(1, '#123c59');
 
     ctx.fillStyle = ocean;
     ctx.fillRect(0, 0, 1024, 512);
 
-    ctx.strokeStyle = 'rgba(100,180,220,0.12)';
+    ctx.strokeStyle = 'rgba(130,205,235,0.12)';
     ctx.lineWidth = 1;
 
     for (let x = 0; x <= 1024; x += 32) {
@@ -165,8 +137,8 @@
       ctx.stroke();
     }
 
-    ctx.fillStyle = '#397d70';
-    ctx.strokeStyle = 'rgba(146,220,190,0.5)';
+    ctx.fillStyle = '#548a78';
+    ctx.strokeStyle = 'rgba(170,220,190,0.5)';
     ctx.lineWidth = 1.5;
 
     function land(lon, lat, rx, ry, rotation) {
@@ -191,24 +163,20 @@
     return new THREE.CanvasTexture(canvas);
   }
 
-  const fallbackTexture = makeFallbackTexture();
-
   const earthMaterial = new THREE.MeshPhongMaterial({
-    map: fallbackTexture,
+    map: makeFallbackTexture(),
     color: 0xffffff,
-    shininess: 22,
-    specular: new THREE.Color(0x294b68)
+    shininess: 24,
+    specular: new THREE.Color(0x385d78)
   });
 
   const earth = new THREE.Mesh(
-    new THREE.SphereGeometry(earthRadius, 96, 64),
+    new THREE.SphereGeometry(earthRadius, 72, 56),
     earthMaterial
   );
-
   root.add(earth);
 
-  // A real Earth image is used when available.
-  // The fallback texture remains if the image cannot load.
+  // Detailed Earth image; fallback texture stays if the image fails.
   const textureLoader = new THREE.TextureLoader();
   textureLoader.setCrossOrigin('anonymous');
 
@@ -219,13 +187,8 @@
         texture.encoding = THREE.sRGBEncoding;
       }
 
-      const oldTexture = earthMaterial.map;
       earthMaterial.map = texture;
       earthMaterial.needsUpdate = true;
-
-      if (oldTexture && oldTexture !== texture) {
-        oldTexture.dispose();
-      }
     },
     undefined,
     function () {
@@ -233,26 +196,18 @@
     }
   );
 
-  // ------------------------------------------------------------
-  // THIN ATMOSPHERIC RIM — no thick glowing shell
-  // ------------------------------------------------------------
-
+  // Thin atmospheric edge, not a large glowing shell.
   const atmosphere = new THREE.Mesh(
-    new THREE.SphereGeometry(1.018, 72, 48),
+    new THREE.SphereGeometry(1.022, 64, 48),
     new THREE.MeshBasicMaterial({
-      color: 0x399bd6,
+      color: 0x4bbfff,
       transparent: true,
-      opacity: 0.075,
+      opacity: 0.085,
       side: THREE.BackSide,
       depthWrite: false
     })
   );
-
   root.add(atmosphere);
-
-  // ------------------------------------------------------------
-  // RESIZING
-  // ------------------------------------------------------------
 
   function resize() {
     const width = Math.max(box.clientWidth, 1);
@@ -260,21 +215,11 @@
 
     camera.aspect = width / height;
     camera.updateProjectionMatrix();
-
     renderer.setSize(width, height, false);
   }
 
   resize();
   window.addEventListener('resize', resize);
-
-  if (window.ResizeObserver) {
-    const resizeObserver = new ResizeObserver(resize);
-    resizeObserver.observe(box);
-  }
-
-  // ------------------------------------------------------------
-  // COORDINATES
-  // ------------------------------------------------------------
 
   function latLonToVector(lat, lon, radius) {
     const phi = (90 - lat) * Math.PI / 180;
@@ -287,9 +232,13 @@
     );
   }
 
-  // ------------------------------------------------------------
-  // DYNAMIC RADAR OBJECTS
-  // ------------------------------------------------------------
+  function orientToSurface(object, position) {
+    object.position.copy(position);
+    object.quaternion.setFromUnitVectors(
+      new THREE.Vector3(0, 1, 0),
+      position.clone().normalize()
+    );
+  }
 
   let pulses = [];
 
@@ -299,9 +248,7 @@
       dynamicGroup.remove(object);
 
       object.traverse(function (child) {
-        if (child.geometry) {
-          child.geometry.dispose();
-        }
+        if (child.geometry) child.geometry.dispose();
 
         if (child.material) {
           const materials = Array.isArray(child.material)
@@ -309,10 +256,6 @@
             : [child.material];
 
           materials.forEach(function (material) {
-            if (material.map && material.map !== earthMaterial.map) {
-              material.map.dispose();
-            }
-
             material.dispose();
           });
         }
@@ -328,12 +271,12 @@
       region.classification.startsWith('NEARBY')
     );
 
-    const color = nearby ? 0xfb7185 : 0x10e7c0;
+    const color = nearby ? 0xfb7185 : 0x10e8c0;
 
     const marker = new THREE.Mesh(
-      new THREE.SphereGeometry(nearby ? 0.022 : 0.016, 14, 12),
+      new THREE.SphereGeometry(nearby ? 0.022 : 0.016, 16, 12),
       new THREE.MeshBasicMaterial({
-        color: selected ? color : 0x64748b,
+        color: selected ? color : 0x8294a8,
         transparent: true,
         opacity: selected ? 1 : 0.3
       })
@@ -347,104 +290,69 @@
 
     if (nearby && selected) {
       const ring = new THREE.Mesh(
-        new THREE.TorusGeometry(0.035, 0.0025, 6, 32),
+        new THREE.TorusGeometry(0.035, 0.0025, 6, 36),
         new THREE.MeshBasicMaterial({
           color: 0xfb7185,
           transparent: true,
-          opacity: 0.8
+          opacity: 0.82
         })
       );
 
-      const position = latLonToVector(
-        region.lat,
-        region.lon,
-        1.014
-      );
-
-      ring.position.copy(position);
-      ring.quaternion.setFromUnitVectors(
-        new THREE.Vector3(0, 1, 0),
-        position.clone().normalize()
+      orientToSurface(
+        ring,
+        latLonToVector(region.lat, region.lon, 1.014)
       );
 
       dynamicGroup.add(ring);
-
-      pulses.push({
-        type: 'ring',
-        mesh: ring,
-        phase: Math.random() * Math.PI * 2
-      });
     }
   }
 
   function addQuakeMarker(quake) {
-    if (
-      typeof quake.lat !== 'number' ||
-      typeof quake.lon !== 'number'
-    ) return;
-
     const simulated = !!quake.simulated;
     const color = simulated ? 0xc084fc : 0xfbbf24;
 
-    const position = latLonToVector(
-      quake.lat,
-      quake.lon,
-      1.018
-    );
-
     const dot = new THREE.Mesh(
-      new THREE.SphereGeometry(
-        simulated ? 0.019 : 0.014,
-        12,
-        10
-      ),
-      new THREE.MeshBasicMaterial({ color })
+      new THREE.SphereGeometry(simulated ? 0.019 : 0.014, 14, 12),
+      new THREE.MeshBasicMaterial({ color: color })
     );
 
-    dot.position.copy(position);
+    dot.position.copy(
+      latLonToVector(quake.lat, quake.lon, 1.018)
+    );
+
     dynamicGroup.add(dot);
 
     const ring = new THREE.Mesh(
       new THREE.TorusGeometry(
         simulated ? 0.043 : 0.032,
-        0.003,
+        0.0025,
         6,
         32
       ),
       new THREE.MeshBasicMaterial({
-        color,
+        color: color,
         transparent: true,
-        opacity: 0.85
+        opacity: 0.82
       })
     );
 
-    ring.position.copy(position);
-    ring.quaternion.setFromUnitVectors(
-      new THREE.Vector3(0, 1, 0),
-      position.clone().normalize()
+    orientToSurface(
+      ring,
+      latLonToVector(quake.lat, quake.lon, 1.02)
     );
 
     dynamicGroup.add(ring);
 
     pulses.push({
-      type: 'ring',
+      type: 'quake',
       mesh: ring,
-      phase: Math.random() * Math.PI * 2
+      phase: pulses.length * 0.83
     });
   }
 
   function addFailoverRoute(region, alternative) {
-    const start = latLonToVector(
-      region.lat,
-      region.lon,
-      1.018
-    );
-
-    const end = latLonToVector(
-      alternative.lat,
-      alternative.lon,
-      1.018
-    );
+    const start = latLonToVector(region.lat, region.lon, 1.018);
+    const end = latLonToVector(alternative.lat, alternative.lon, 1.018);
 
     const midpoint = start.clone()
       .add(end)
@@ -458,85 +366,85 @@
     );
 
     const route = new THREE.Mesh(
-      new THREE.TubeGeometry(curve, 48, 0.004, 7, false),
+      new THREE.TubeGeometry(curve, 64, 0.0045, 8, false),
       new THREE.MeshBasicMaterial({
-        color: 0x10e7c0,
+        color: 0x20e6bd,
         transparent: true,
-        opacity: 0.82
+        opacity: 0.9
       })
     );
 
     dynamicGroup.add(route);
 
-    const pulse = new THREE.Mesh(
-      new THREE.SphereGeometry(0.013, 12, 10),
-      new THREE.MeshBasicMaterial({
-        color: 0xffffff
-      })
-    );
+    // Several independently moving pulses make the route feel active.
+    for (let i = 0; i < 3; i++) {
+      const pulse = new THREE.Mesh(
+        new THREE.SphereGeometry(0.012, 12, 10),
+        new THREE.MeshBasicMaterial({ color: 0xeaffff })
+      );
 
-    dynamicGroup.add(pulse);
+      dynamicGroup.add(pulse);
 
-    pulses.push({
-      type: 'route',
-      mesh: pulse,
-      curve: curve,
-      progress: Math.random()
-    });
+      pulses.push({
+        type: 'route',
+        mesh: pulse,
+        curve: curve,
+        progress: i / 3
+      });
+    }
   }
 
-  // ------------------------------------------------------------
-  // SIMULATION CAMERA FOCUS
-  // ------------------------------------------------------------
+  function shortestAngle(current, target) {
+    let difference = (target - current) % (Math.PI * 2);
 
-  let targetQuaternion = new THREE.Quaternion();
-  let lastFocusKey = '';
+    if (difference > Math.PI) difference -= Math.PI * 2;
+    if (difference < -Math.PI) difference += Math.PI * 2;
 
-  function focusOnRegion(region) {
-    if (
-      !region ||
-      typeof region.lat !== 'number' ||
-      typeof region.lon !== 'number'
-    ) return;
-
-    const key = String(region.id || '') +
-      ':' + region.lat + ':' + region.lon;
-
-    if (key === lastFocusKey) return;
-    lastFocusKey = key;
-
-    const direction = latLonToVector(
-      region.lat,
-      region.lon,
-      1
-    ).normalize();
-
-    const cameraDirection = new THREE.Vector3(0, 0, 1);
-
-    targetQuaternion.setFromUnitVectors(
-      direction,
-      cameraDirection
-    );
+    return difference;
   }
 
-  // ------------------------------------------------------------
-  // HUD
-  // ------------------------------------------------------------
+  let targetRotationY = root.rotation.y;
+  let targetRotationX = root.rotation.x;
+  let targetCameraZ = normalCameraZ;
+  let dragging = false;
+  let autoSpin = true;
+  let previousX = 0;
+  let previousY = 0;
+  let animationFrame = 0;
+  let lastFrameTime = 0;
 
-  function updateHud(data, simulated, active) {
+  function focusOnRoute(region, alternative) {
+    const start = latLonToVector(region.lat, region.lon, 1);
+    const end = latLonToVector(alternative.lat, alternative.lon, 1);
+
+    const center = start.clone().add(end);
+
+    if (center.lengthSq() < 0.0001) {
+      center.copy(start);
+    }
+
+    center.normalize();
+
+    // Rotate the midpoint of the two locations toward the camera.
+    targetRotationY = Math.atan2(-center.x, center.z);
+    targetRotationX = 0.12;
+    targetCameraZ = simulationCameraZ;
+    autoSpin = false;
+  }
+
+  function returnToNormalView() {
+    targetCameraZ = normalCameraZ;
+    autoSpin = true;
+  }
+
+  function updateHud(data, simulated, active, alternative) {
     if (!hud) return;
 
-    if (!active) {
+    if (!active || !alternative) {
       hud.hidden = true;
       hud.textContent = '';
       return;
     }
-
-    const alternative = active.nearest_alternative
-      ? (data.regions || []).find(function (region) {
-          return region.id === active.nearest_alternative.id;
-        })
-      : null;
 
     const firstQuake = active.nearby_quakes &&
       active.nearby_quakes.length
@@ -544,26 +452,19 @@
       : null;
 
     const eventText = firstQuake
-      ? 'M' + firstQuake.magnitude +
-        ' quake · ' + firstQuake.distance_km + ' km'
+      ? 'M' + firstQuake.magnitude + ' quake · ' +
+        firstQuake.distance_km + ' km'
       : 'Nearby seismic event';
 
-    const destination = alternative
-      ? alternative.label + ' (' + alternative.id + ')'
-      : 'nearest alternative';
-
     hud.textContent =
-      (simulated ? 'SIMULATION · ' : 'RADAR ALERT · ') +
-      eventText +
+      (simulated ? 'SIMULATION' : 'RADAR ROUTE') +
+      ' · ' + eventText +
       ' near ' + active.label +
-      ' · Alternative: ' + destination;
+      ' · Route to ' + alternative.label +
+      ' (' + alternative.id + ')';
 
     hud.hidden = false;
   }
-
-  // ------------------------------------------------------------
-  // PUBLIC UPDATE — called by app.js
-  // ------------------------------------------------------------
 
   function update(data, stackState, simulated) {
     if (!data || !Array.isArray(data.regions)) return;
@@ -580,27 +481,17 @@
       regionById.set(region.id, region);
     });
 
-    const selectedNearby = data.regions.find(function (region) {
-      const selected = !selectedRegions ||
-        selectedRegions.has(region.id);
-
-      return selected &&
-        region.classification &&
-        region.classification.startsWith('NEARBY');
-    });
-
-    const activeNearby = data.regions.find(function (region) {
+    const active = data.regions.find(function (region) {
       return region.classification &&
-        region.classification.startsWith('NEARBY');
+        region.classification.startsWith('NEARBY') &&
+        (!selectedRegions || selectedRegions.has(region.id)) &&
+        region.nearest_alternative;
     });
 
-    const focusRegion = selectedNearby || activeNearby;
+    let alternative = null;
 
-    // Only redirect the camera when a new simulation/alert target appears.
-    if (simulated && focusRegion) {
-      focusOnRegion(focusRegion);
-    } else if (!simulated) {
-      lastFocusKey = '';
+    if (active && active.nearest_alternative) {
+      alternative = regionById.get(active.nearest_alternative.id) || null;
     }
 
     const quakes = data.quakes &&
@@ -614,81 +505,60 @@
       const selected = !selectedRegions ||
         selectedRegions.has(region.id);
 
-      if (
-        typeof region.lat !== 'number' ||
-        typeof region.lon !== 'number'
-      ) return;
-
       addRegionMarker(region, selected);
 
       const nearby = region.classification &&
         region.classification.startsWith('NEARBY');
 
-      if (
-        !nearby ||
-        !selected ||
-        !region.nearest_alternative
-      ) return;
+      if (!nearby || !selected || !region.nearest_alternative) {
+        return;
+      }
 
-      const alternative = regionById.get(
+      const destination = regionById.get(
         region.nearest_alternative.id
       );
 
-      if (
-        alternative &&
-        typeof alternative.lat === 'number' &&
-        typeof alternative.lon === 'number'
-      ) {
-        addFailoverRoute(region, alternative);
+      if (destination) {
+        addFailoverRoute(region, destination);
       }
     });
 
-    updateHud(data, !!simulated, focusRegion);
+    if (simulated && active && alternative) {
+      focusOnRoute(active, alternative);
+    } else {
+      returnToNormalView();
+    }
+
+    updateHud(data, !!simulated, active, alternative);
   }
 
-  // ------------------------------------------------------------
-  // SMOOTH TOUCH / MOUSE ROTATION
-  // ------------------------------------------------------------
+  const canvas = renderer.domElement;
 
-  let dragging = false;
-  let previousX = 0;
-  let previousY = 0;
-  let lastFrameTime = 0;
-  let animationFrame = 0;
-  let idleTime = 0;
-
-  const dragSensitivity = 0.0045;
-
-  renderer.domElement.addEventListener('pointerdown', function (event) {
+  canvas.addEventListener('pointerdown', function (event) {
     dragging = true;
-    idleTime = 0;
-
+    autoSpin = false;
     previousX = event.clientX;
     previousY = event.clientY;
 
-    if (renderer.domElement.setPointerCapture) {
-      renderer.domElement.setPointerCapture(event.pointerId);
+    if (canvas.setPointerCapture) {
+      canvas.setPointerCapture(event.pointerId);
     }
   });
 
-  renderer.domElement.addEventListener('pointermove', function (event) {
+  canvas.addEventListener('pointermove', function (event) {
     if (!dragging) return;
 
     const dx = event.clientX - previousX;
     const dy = event.clientY - previousY;
 
-    const yaw = new THREE.Quaternion().setFromAxisAngle(
-      new THREE.Vector3(0, 1, 0),
-      dx * dragSensitivity
+    root.rotation.y += dx * 0.005;
+    root.rotation.x = Math.max(
+      -1.1,
+      Math.min(1.1, root.rotation.x + dy * 0.003)
     );
 
-    const pitch = new THREE.Quaternion().setFromAxisAngle(
-      new THREE.Vector3(1, 0, 0),
-      dy * dragSensitivity
-    );
-
-    targetQuaternion.multiply(yaw);
-    targetQuaternion.multiply(pitch);
+    targetRotationY = root.rotation.y;
+    targetRotationX = root.rotation.x;
 
     previousX = event.clientX;
     previousY = event.clientY;
@@ -696,16 +566,11 @@
 
   function stopDragging() {
     dragging = false;
-    idleTime = 0;
   }
 
-  renderer.domElement.addEventListener('pointerup', stopDragging);
-  renderer.domElement.addEventListener('pointercancel', stopDragging);
-  renderer.domElement.addEventListener('lostpointercapture', stopDragging);
-
-  // ------------------------------------------------------------
-  // ANIMATION LOOP
-  // ------------------------------------------------------------
+  canvas.addEventListener('pointerup', stopDragging);
+  canvas.addEventListener('pointercancel', stopDragging);
+  canvas.addEventListener('lostpointercapture', stopDragging);
 
   function animate(time) {
     animationFrame = requestAnimationFrame(animate);
@@ -714,52 +579,51 @@
 
     const delta = Math.min(
       (time - lastFrameTime) / 1000,
-      0.04
+      0.05
     );
 
     lastFrameTime = time;
 
-    idleTime += delta;
-
-    // Slow automatic rotation when the user is not interacting.
-    // Do not fight the simulation camera movement.
-    if (!dragging && idleTime > 3 && !lastFocusKey) {
-      const idleRotation = new THREE.Quaternion().setFromAxisAngle(
-        new THREE.Vector3(0, 1, 0),
-        delta * 0.055
+    if (!dragging) {
+      const turnDifference = shortestAngle(
+        root.rotation.y,
+        targetRotationY
       );
 
-      targetQuaternion.multiply(idleRotation);
-    }
+      root.rotation.y += turnDifference *
+        Math.min(1, delta * 3.2);
 
-    // Smooth camera orientation.
-    const smooth = 1 - Math.exp(-delta * 4.2);
-    root.quaternion.slerp(targetQuaternion, smooth);
+      root.rotation.x +=
+        (targetRotationX - root.rotation.x) *
+        Math.min(1, delta * 3.2);
+
+      if (autoSpin) {
+        root.rotation.y += delta * 0.035;
+        targetRotationY = root.rotation.y;
+      }
+
+      camera.position.z +=
+        (targetCameraZ - camera.position.z) *
+        Math.min(1, delta * 2.4);
+    }
 
     const seconds = time * 0.001;
 
     pulses.forEach(function (pulse) {
       if (pulse.type === 'route') {
-        pulse.progress =
-          (pulse.progress + delta * 0.24) % 1;
-
+        pulse.progress = (pulse.progress + delta * 0.17) % 1;
         pulse.mesh.position.copy(
           pulse.curve.getPointAt(pulse.progress)
         );
-      }
+      } else if (pulse.type === 'quake') {
+        const scale = 0.86 + 0.22 *
+          (0.5 + 0.5 * Math.sin(
+            seconds * 2.4 + pulse.phase
+          ));
 
-      if (pulse.type === 'ring') {
-        const wave = 0.5 + 0.5 * Math.sin(
-          seconds * 2.2 + pulse.phase
-        );
-
-        const scale = 0.85 + wave * 0.35;
         pulse.mesh.scale.setScalar(scale);
       }
     });
-
-    // Very subtle starfield drift.
-    stars.rotation.y += delta * 0.002;
 
     renderer.render(scene, camera);
   }
