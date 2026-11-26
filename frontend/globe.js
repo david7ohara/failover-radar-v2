@@ -241,7 +241,7 @@
     new THREE.MeshBasicMaterial({
       color: 0x399bd6,
       transparent: true,
-      opacity: 0.025,
+      opacity: 0.015,
       side: THREE.BackSide,
       depthWrite: false
     })
