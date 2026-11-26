@@ -1045,3 +1045,234 @@ h1 {
   height: 100% !important;
 }
 
+
+/* ==========================================================
+   FAILOVER RADAR — FIXED EARTH / DEEP SPACE MOBILE EXPERIENCE
+   Append this block after the existing stylesheet.
+   ========================================================== */
+
+.globe-canvas {
+  display: block;
+  width: 100%;
+  height: 100%;
+  outline: none;
+  touch-action: none;
+}
+
+.map-pane {
+  isolation: isolate;
+  overflow: hidden;
+  background:
+    radial-gradient(ellipse at 50% 42%,
+      rgba(17, 71, 112, 0.18),
+      transparent 58%),
+    radial-gradient(ellipse at 50% 100%,
+      rgba(3, 15, 32, 0.5),
+      transparent 65%),
+    #030812;
+}
+
+#map {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  min-height: 380px;
+  overflow: hidden;
+  background: transparent;
+}
+
+#map canvas {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+.globe-loading {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  color: rgba(186, 230, 253, 0.78);
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.18em;
+  pointer-events: none;
+}
+
+/* Keep the top controls above the fixed globe. */
+.app-header {
+  position: sticky;
+  top: 0;
+  z-index: 100;
+}
+
+/* Smooth, glass-like dashboard panels. */
+.panel,
+.checklist-card,
+.brief-panel-inner {
+  backdrop-filter: blur(22px) saturate(145%);
+  -webkit-backdrop-filter: blur(22px) saturate(145%);
+}
+
+/* Phone layout: the Earth stays fixed while content scrolls over it. */
+@media (max-width: 760px) {
+
+  html,
+  body {
+    min-height: 100%;
+    overflow-x: hidden;
+  }
+
+  body {
+    position: relative;
+    background: #030812;
+  }
+
+  .app-header {
+    height: 64px;
+    min-height: 64px;
+    padding-left: 12px;
+    padding-right: 12px;
+    gap: 8px;
+    background: rgba(5, 12, 25, 0.91);
+    border-bottom: 1px solid rgba(125, 211, 252, 0.2);
+    backdrop-filter: blur(24px) saturate(150%);
+    -webkit-backdrop-filter: blur(24px) saturate(150%);
+  }
+
+  .header-title {
+    min-width: 0;
+    gap: 8px;
+  }
+
+  .header-title h1 {
+    font-size: 17px;
+    white-space: nowrap;
+  }
+
+  .radar-icon {
+    width: 34px;
+    height: 34px;
+    flex: 0 0 34px;
+  }
+
+  .header-controls {
+    gap: 7px;
+  }
+
+  .header-controls .btn {
+    min-height: 40px;
+    padding: 0 13px;
+    font-size: 12px;
+    white-space: nowrap;
+  }
+
+  /*
+    The map is fixed behind the scrolling dashboard.
+    It does not move when the user scrolls the page.
+  */
+  .app-main {
+    display: block !important;
+    position: relative;
+    width: 100%;
+    min-height: 100%;
+    padding-top: calc(100svh - 64px);
+    padding-top: calc(100dvh - 64px);
+  }
+
+  .map-pane {
+    position: fixed !important;
+    top: 64px;
+    left: 0;
+    right: 0;
+    width: 100%;
+    height: calc(100svh - 64px);
+    height: calc(100dvh - 64px);
+    min-height: 0 !important;
+    z-index: 0;
+    border: 0;
+    overflow: hidden;
+    pointer-events: auto;
+  }
+
+  #map {
+    width: 100%;
+    height: 100%;
+    min-height: 0 !important;
+  }
+
+  .sidebar {
+    position: relative;
+    z-index: 2;
+    display: flex;
+    width: 100%;
+    min-width: 0;
+    padding: 18px 12px 22px;
+    gap: 13px;
+    background:
+      linear-gradient(
+        180deg,
+        rgba(5, 12, 25, 0.68),
+        rgba(5, 12, 25, 0.88) 12%,
+        rgba(5, 12, 25, 0.94)
+      );
+    border: 0;
+    border-top: 1px solid rgba(125, 211, 252, 0.18);
+    border-radius: 22px 22px 0 0;
+    box-shadow: 0 -12px 38px rgba(0, 0, 0, 0.2);
+  }
+
+  .panel {
+    background: rgba(8, 19, 36, 0.78);
+    border: 1px solid rgba(148, 190, 220, 0.2);
+    border-left: 3px solid rgba(16, 245, 192, 0.88);
+    box-shadow:
+      inset 0 1px 0 rgba(255, 255, 255, 0.07),
+      0 12px 28px rgba(0, 0, 0, 0.22);
+    border-radius: 17px;
+  }
+
+  .checklist-panel,
+  .brief-panel {
+    position: relative;
+    z-index: 2;
+    width: 100%;
+    background: rgba(5, 12, 25, 0.94);
+    backdrop-filter: blur(24px) saturate(145%);
+    -webkit-backdrop-filter: blur(24px) saturate(145%);
+    border-top: 1px solid rgba(125, 211, 252, 0.18);
+  }
+
+  .checklist-panel-inner,
+  .brief-panel-inner {
+    padding-left: 13px;
+    padding-right: 13px;
+  }
+
+  .sim-narration {
+    left: 12px;
+    right: 12px;
+    bottom: max(14px, env(safe-area-inset-bottom));
+    z-index: 5;
+    font-size: 11px;
+    line-height: 1.55;
+    background: rgba(5, 15, 30, 0.86);
+    border: 1px solid rgba(45, 212, 191, 0.55);
+    box-shadow: 0 8px 28px rgba(0, 0, 0, 0.35);
+  }
+
+  .update-error {
+    position: relative;
+    z-index: 110;
+  }
+
+  .mystack-drawer,
+  .mystack-scrim {
+    z-index: 200;
+  }
+
+  .brief-textarea {
+    width: 100%;
+    max-width: 100%;
+  }
+}
