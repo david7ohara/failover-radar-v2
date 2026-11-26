@@ -1276,3 +1276,143 @@ h1 {
     max-width: 100%;
   }
 }
+
+/* =========================================================
+   FAILOVER RADAR — STICKY EARTH / GLASS SHEET UPDATE
+   Append this block at the VERY END of styles.css
+   ========================================================= */
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  overflow-x: hidden;
+}
+
+/* Keep the Earth and its separate information strip together. */
+.map-pane {
+  position: sticky;
+  top: 0;
+  z-index: 5;
+  align-self: start;
+  display: grid;
+  grid-template-rows: minmax(0, 1fr) auto;
+  gap: 0;
+  height: min(72svh, 720px);
+  min-height: 430px;
+  overflow: hidden;
+  background:
+    radial-gradient(ellipse at 50% 45%, rgba(24, 88, 130, 0.22), transparent 62%),
+    linear-gradient(180deg, #050b16 0%, #071323 100%);
+  border-bottom: 1px solid rgba(148, 210, 235, 0.16);
+}
+
+/* The actual WebGL viewport. */
+#map {
+  position: relative;
+  width: 100% !important;
+  height: 100% !important;
+  min-height: 0 !important;
+  overflow: hidden;
+  background:
+    radial-gradient(circle at 50% 48%, rgba(31, 111, 158, 0.14), transparent 55%),
+    transparent;
+  isolation: isolate;
+}
+
+#map canvas,
+#map .globe-canvas {
+  display: block !important;
+  width: 100% !important;
+  height: 100% !important;
+  touch-action: none;
+}
+
+/* Separate glass caption below the Earth. */
+.sim-narration {
+  position: relative !important;
+  inset: auto !important;
+  z-index: 2;
+  width: auto;
+  margin: 0 14px max(12px, env(safe-area-inset-bottom));
+  padding: 13px 16px;
+  border: 1px solid rgba(87, 220, 207, 0.42);
+  border-radius: 17px;
+  background: rgba(8, 19, 34, 0.86);
+  color: #eaf8ff;
+  box-shadow:
+    0 12px 32px rgba(0, 0, 0, 0.32),
+    inset 0 1px 0 rgba(255, 255, 255, 0.12);
+  -webkit-backdrop-filter: blur(22px) saturate(145%);
+  backdrop-filter: blur(22px) saturate(145%);
+  font-size: 13px;
+  line-height: 1.55;
+  font-weight: 650;
+  text-align: center;
+  pointer-events: none;
+}
+
+/* Let the panels form a glass sheet scrolling below the globe. */
+.sidebar {
+  position: relative;
+  z-index: 6;
+  background: rgba(7, 14, 27, 0.91);
+  border-top: 1px solid rgba(180, 220, 245, 0.18);
+  -webkit-backdrop-filter: blur(24px) saturate(140%);
+  backdrop-filter: blur(24px) saturate(140%);
+}
+
+/* Keep the main page content above the background without blocking touch. */
+.app-main {
+  position: relative;
+  overflow: visible;
+}
+
+/* iPhone and narrow screens. */
+@media (max-width: 760px) {
+  .app-main {
+    display: flex;
+    flex-direction: column;
+    gap: 0;
+  }
+
+  .map-pane {
+    top: 0;
+    width: 100%;
+    height: 68svh;
+    min-height: 420px;
+    max-height: 680px;
+  }
+
+  .sidebar {
+    width: 100%;
+    padding: 14px;
+    gap: 12px;
+    border-left: 0;
+    border-radius: 22px 22px 0 0;
+    margin-top: 0;
+  }
+
+  .sim-narration {
+    margin-left: 12px;
+    margin-right: 12px;
+    margin-bottom: max(10px, env(safe-area-inset-bottom));
+    font-size: 12px;
+  }
+}
+
+/* Smaller iPhones. */
+@media (max-width: 390px) {
+  .map-pane {
+    height: 65svh;
+    min-height: 390px;
+  }
+}
+
+/* Respect reduced-motion preferences. */
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+}
