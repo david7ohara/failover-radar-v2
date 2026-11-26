@@ -1,6 +1,5 @@
 'use strict';
 (function () {
-  // Let existing app.js run cleanly without Leaflet
   const noop = new Proxy(function () {}, { get: () => noop, apply: () => noop });
   window.L = noop;
 
@@ -8,10 +7,46 @@
   const hud = document.getElementById('sim-narration');
   if (!box || typeof Globe === 'undefined') return;
 
+  // Build an instant, CORS-free procedural Arctic Aurora Earth texture on canvas
+  function makeArcticTexture() {
+    const c = document.createElement('canvas');
+    c.width = 1024;
+    c.height = 512;
+    const ctx = c.getContext('2d');
+
+    const grad = ctx.createLinearGradient(0, 0, 0, 512);
+    grad.addColorStop(0, '#0c2340');
+    grad.addColorStop(0.25, '#071324');
+    grad.addColorStop(0.5, '#050b16');
+    grad.addColorStop(0.75, '#071324');
+    grad.addColorStop(1, '#0c2340');
+    ctx.fillStyle = grad;
+    ctx.fillRect(0, 0, 1024, 512);
+
+    // Subtle Arctic Aurora lat/lon grid lines
+    ctx.strokeStyle = 'rgba(56, 189, 248, 0.22)';
+    ctx.lineWidth = 1;
+    for (let x = 0; x <= 1024; x += 32) {
+      ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, 512); ctx.stroke();
+    }
+    for (let y = 0; y <= 512; y += 32) {
+      ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(1024, y); ctx.stroke();
+    }
+
+    // Glowing equator & polar circles
+    ctx.strokeStyle = 'rgba(16, 245, 192, 0.45)';
+    ctx.lineWidth = 2;
+    [96, 256, 416].forEach(y => {
+      ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(1024, y); ctx.stroke();
+    });
+
+    return c.toDataURL('image/png');
+  }
+
   const globe = Globe()(box)
-    .globeImageUrl('https://unpkg.com')
-    .bumpImageUrl('https://unpkg.com')
+    .globeImageUrl(makeArcticTexture())
     .backgroundColor('rgba(6, 11, 20, 0)')
+    .showAtmosphere(true)
     .atmosphereColor('#38bdf8')
     .atmosphereAltitude(0.24)
     .pointLat('lat').pointLng('lon').pointColor('c')
@@ -22,18 +57,21 @@
     .arcStartLat('sLat').arcStartLng('sLng').arcEndLat('eLat').arcEndLng('eLng')
     .arcColor(() => ['#fb7185', '#10f5c0'])
     .arcDashLength(0.45).arcDashGap(0.22).arcDashAnimateTime(1350)
-    .arcStroke(1.45).arcAltitudeAutoScale(0.42);
+    .arcStroke(1.5).arcAltitudeAutoScale(0.42);
 
   const ctrl = globe.controls();
   ctrl.autoRotate = true;
-  ctrl.autoRotateSpeed = 0.6;
-  globe.pointOfView({ lat: 24, lng: 18, altitude: 2.1 }, 0);
+  ctrl.autoRotateSpeed = 0.65;
+  globe.pointOfView({ lat: 24, lng: 18, altitude: 2.05 }, 0);
 
   const fit = () => {
-    globe.width(box.clientWidth || window.innerWidth);
-    globe.height(box.clientHeight || 420);
+    const w = box.clientWidth || window.innerWidth;
+    const h = box.clientHeight || 390;
+    globe.width(w);
+    globe.height(h);
   };
   fit();
+  setTimeout(fit, 250);
   window.addEventListener('resize', fit);
 
   let pts = [];
@@ -70,7 +108,7 @@
           c: q.simulated ? '#a78bfa' : '#fbbf24',
           baseAlt: alt,
           alt,
-          r: q.simulated ? 0.55 : 0.36,
+          r: q.simulated ? 0.6 : 0.4,
           tip: `${q.place} · M${q.magnitude}`
         });
         if (q.simulated) rings.push({ lat: q.lat, lon: q.lon, maxR: 7.5 });
@@ -78,14 +116,14 @@
 
       for (const reg of d.regions) {
         const near = reg.classification.startsWith('NEARBY');
-        const alt = near ? 0.25 : 0.11;
+        const alt = near ? 0.26 : 0.12;
         nextPts.push({
           lat: reg.lat,
           lon: reg.lon,
           c: near ? '#fb7185' : '#10f5c0',
           baseAlt: alt,
           alt,
-          r: near ? 0.62 : 0.44,
+          r: near ? 0.68 : 0.48,
           tip: `${reg.label} (${reg.id}) · ${reg.classification}`
         });
         if (near) {
@@ -105,7 +143,7 @@
         lastSim = sim;
         ctrl.autoRotate = !sim;
         if (sim && active) {
-          globe.pointOfView({ lat: active.lat, lng: active.lon, altitude: 1.65 }, 1100);
+          globe.pointOfView({ lat: active.lat, lng: active.lon, altitude: 1.6 }, 1100);
         }
       }
 
