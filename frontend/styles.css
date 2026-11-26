@@ -1032,3 +1032,16 @@ h1 {
   height: 100% !important;
 }
 
+/* ── Force Explicit 3D Canvas Height on Mobile & Desktop ─────────────────── */
+#map {
+  width: 100% !important;
+  height: 100% !important;
+  min-height: 380px !important;
+  position: relative;
+}
+#map canvas {
+  display: block !important;
+  width: 100% !important;
+  height: 100% !important;
+}
+
