@@ -37,22 +37,25 @@
 
   renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 1.5));
   renderer.setClearColor(0x000000, 0);
-  renderer.domElement.className = 'globe-canvas';
-  renderer.domElement.style.display = 'block';
-  renderer.domElement.style.width = '100%';
-  renderer.domElement.style.height = '100%';
-  renderer.domElement.style.touchAction = 'none';
-  box.appendChild(renderer.domElement);
+
+  const canvas = renderer.domElement;
+  canvas.className = 'globe-canvas';
+  canvas.style.display = 'block';
+  canvas.style.width = '100%';
+  canvas.style.height = '100%';
+  canvas.style.touchAction = 'none';
+  canvas.style.cursor = 'grab';
+
+  box.appendChild(canvas);
 
   const root = new THREE.Group();
   root.rotation.x = 0.18;
   scene.add(root);
 
-  const earthRadius = 1;
   const dynamicGroup = new THREE.Group();
   root.add(dynamicGroup);
 
-  // Lighting: bright daylight with a restrained cool fill.
+  // Lighting
   scene.add(new THREE.AmbientLight(0xc6dcf5, 1.05));
 
   const sunlight = new THREE.DirectionalLight(0xffffff, 2.0);
@@ -63,7 +66,7 @@
   fillLight.position.set(-4, -1, -3);
   scene.add(fillLight);
 
-  // Stars sit behind Earth and do not rotate with the globe.
+  // Starfield: preserved from the previous globe.
   function createStars() {
     const positions = [];
     let seed = 92741;
@@ -87,6 +90,7 @@
     }
 
     const geometry = new THREE.BufferGeometry();
+
     geometry.setAttribute(
       'position',
       new THREE.Float32BufferAttribute(positions, 3)
@@ -105,14 +109,15 @@
 
   createStars();
 
+  // Procedural fallback Earth texture.
   function makeFallbackTexture() {
-    const canvas = document.createElement('canvas');
-    canvas.width = 1024;
-    canvas.height = 512;
+    const canvasTexture = document.createElement('canvas');
+    canvasTexture.width = 1024;
+    canvasTexture.height = 512;
 
-    const ctx = canvas.getContext('2d');
+    const ctx = canvasTexture.getContext('2d');
+
     const ocean = ctx.createLinearGradient(0, 0, 0, 512);
-
     ocean.addColorStop(0, '#174768');
     ocean.addColorStop(0.5, '#09243b');
     ocean.addColorStop(1, '#123c59');
@@ -160,7 +165,7 @@
     land(135, 37, 12, 23, 0.3);
     land(135, -25, 38, 25, 0.1);
 
-    return new THREE.CanvasTexture(canvas);
+    return new THREE.CanvasTexture(canvasTexture);
   }
 
   const earthMaterial = new THREE.MeshPhongMaterial({
@@ -171,12 +176,13 @@
   });
 
   const earth = new THREE.Mesh(
-    new THREE.SphereGeometry(earthRadius, 72, 56),
+    new THREE.SphereGeometry(1, 72, 56),
     earthMaterial
   );
+
   root.add(earth);
 
-  // Detailed Earth image; fallback texture stays if the image fails.
+  // Detailed Earth image with procedural fallback.
   const textureLoader = new THREE.TextureLoader();
   textureLoader.setCrossOrigin('anonymous');
 
@@ -192,11 +198,11 @@
     },
     undefined,
     function () {
-      // Keep the fallback texture.
+      // Keep fallback texture if the image cannot load.
     }
   );
 
-  // Thin atmospheric edge, not a large glowing shell.
+  // Subtle atmospheric edge.
   const atmosphere = new THREE.Mesh(
     new THREE.SphereGeometry(1.022, 64, 48),
     new THREE.MeshBasicMaterial({
@@ -207,19 +213,29 @@
       depthWrite: false
     })
   );
+
   root.add(atmosphere);
 
+  // Responsive sizing.
   function resize() {
     const width = Math.max(box.clientWidth, 1);
     const height = Math.max(box.clientHeight, 1);
 
     camera.aspect = width / height;
     camera.updateProjectionMatrix();
+
     renderer.setSize(width, height, false);
   }
 
   resize();
   window.addEventListener('resize', resize);
+
+  let resizeObserver = null;
+
+  if (typeof ResizeObserver !== 'undefined') {
+    resizeObserver = new ResizeObserver(resize);
+    resizeObserver.observe(box);
+  }
 
   function latLonToVector(lat, lon, radius) {
     const phi = (90 - lat) * Math.PI / 180;
@@ -234,6 +250,7 @@
 
   function orientToSurface(object, position) {
     object.position.copy(position);
+
     object.quaternion.setFromUnitVectors(
       new THREE.Vector3(0, 1, 0),
       position.clone().normalize()
@@ -245,10 +262,13 @@
   function disposeDynamicObjects() {
     while (dynamicGroup.children.length) {
       const object = dynamicGroup.children[0];
+
       dynamicGroup.remove(object);
 
       object.traverse(function (child) {
-        if (child.geometry) child.geometry.dispose();
+        if (child.geometry) {
+          child.geometry.dispose();
+        }
 
         if (child.material) {
           const materials = Array.isArray(child.material)
@@ -266,6 +286,13 @@
   }
 
   function addRegionMarker(region, selected) {
+    if (
+      typeof region.lat !== 'number' ||
+      typeof region.lon !== 'number'
+    ) {
+      return;
+    }
+
     const nearby = !!(
       region.classification &&
       region.classification.startsWith('NEARBY')
@@ -308,11 +335,22 @@
   }
 
   function addQuakeMarker(quake) {
+    if (
+      typeof quake.lat !== 'number' ||
+      typeof quake.lon !== 'number'
+    ) {
+      return;
+    }
+
     const simulated = !!quake.simulated;
     const color = simulated ? 0xc084fc : 0xfbbf24;
 
     const dot = new THREE.Mesh(
-      new THREE.SphereGeometry(simulated ? 0.019 : 0.014, 14, 12),
+      new THREE.SphereGeometry(
+        simulated ? 0.019 : 0.014,
+        14,
+        12
+      ),
       new THREE.MeshBasicMaterial({ color: color })
     );
 
@@ -354,10 +392,13 @@
     const start = latLonToVector(region.lat, region.lon, 1.018);
     const end = latLonToVector(alternative.lat, alternative.lon, 1.018);
 
-    const midpoint = start.clone()
-      .add(end)
-      .normalize()
-      .multiplyScalar(1.22);
+    const midpoint = start.clone().add(end);
+
+    if (midpoint.lengthSq() < 0.0001) {
+      midpoint.copy(start);
+    }
+
+    midpoint.normalize().multiplyScalar(1.22);
 
     const curve = new THREE.QuadraticBezierCurve3(
       start,
@@ -376,7 +417,7 @@
 
     dynamicGroup.add(route);
 
-    // Several independently moving pulses make the route feel active.
+    // Three independently moving route pulses.
     for (let i = 0; i < 3; i++) {
       const pulse = new THREE.Mesh(
         new THREE.SphereGeometry(0.012, 12, 10),
@@ -406,12 +447,20 @@
   let targetRotationY = root.rotation.y;
   let targetRotationX = root.rotation.x;
   let targetCameraZ = normalCameraZ;
+
   let dragging = false;
   let autoSpin = true;
+  let activePointerId = null;
+
   let previousX = 0;
   let previousY = 0;
+
+  let dragVelocityX = 0;
+  let dragVelocityY = 0;
+
   let animationFrame = 0;
   let lastFrameTime = 0;
+  let pageVisible = !document.hidden;
 
   function focusOnRoute(region, alternative) {
     const start = latLonToVector(region.lat, region.lon, 1);
@@ -425,10 +474,10 @@
 
     center.normalize();
 
-    // Rotate the midpoint of the two locations toward the camera.
     targetRotationY = Math.atan2(-center.x, center.z);
     targetRotationX = 0.12;
     targetCameraZ = simulationCameraZ;
+
     autoSpin = false;
   }
 
@@ -437,7 +486,7 @@
     autoSpin = true;
   }
 
-  function updateHud(data, simulated, active, alternative) {
+  function updateHud(simulated, active, alternative) {
     if (!hud) return;
 
     if (!active || !alternative) {
@@ -491,7 +540,9 @@
     let alternative = null;
 
     if (active && active.nearest_alternative) {
-      alternative = regionById.get(active.nearest_alternative.id) || null;
+      alternative = regionById.get(
+        active.nearest_alternative.id
+      ) || null;
     }
 
     const quakes = data.quakes &&
@@ -510,7 +561,11 @@
       const nearby = region.classification &&
         region.classification.startsWith('NEARBY');
 
-      if (!nearby || !selected || !region.nearest_alternative) {
+      if (
+        !nearby ||
+        !selected ||
+        !region.nearest_alternative
+      ) {
         return;
       }
 
@@ -518,7 +573,13 @@
         region.nearest_alternative.id
       );
 
-      if (destination) {
+      if (
+        destination &&
+        typeof region.lat === 'number' &&
+        typeof region.lon === 'number' &&
+        typeof destination.lat === 'number' &&
+        typeof destination.lon === 'number'
+      ) {
         addFailoverRoute(region, destination);
       }
     });
@@ -529,43 +590,87 @@
       returnToNormalView();
     }
 
-    updateHud(data, !!simulated, active, alternative);
+    updateHud(!!simulated, active, alternative);
   }
 
-  const canvas = renderer.domElement;
-
+  // Easier touch and mouse rotation.
   canvas.addEventListener('pointerdown', function (event) {
+    if (event.pointerType === 'mouse' && event.button !== 0) {
+      return;
+    }
+
     dragging = true;
     autoSpin = false;
+    activePointerId = event.pointerId;
+
     previousX = event.clientX;
     previousY = event.clientY;
+
+    dragVelocityX = 0;
+    dragVelocityY = 0;
+
+    canvas.style.cursor = 'grabbing';
 
     if (canvas.setPointerCapture) {
       canvas.setPointerCapture(event.pointerId);
     }
+
+    event.preventDefault();
   });
 
   canvas.addEventListener('pointermove', function (event) {
-    if (!dragging) return;
+    if (!dragging || event.pointerId !== activePointerId) {
+      return;
+    }
 
     const dx = event.clientX - previousX;
     const dy = event.clientY - previousY;
 
-    root.rotation.y += dx * 0.005;
+    // More responsive horizontal movement, gentler vertical movement.
+    const horizontal = dx * 0.008;
+    const vertical = dy * 0.005;
+
+    root.rotation.y += horizontal;
+
     root.rotation.x = Math.max(
       -1.1,
-      Math.min(1.1, root.rotation.x + dy * 0.003)
+      Math.min(1.1, root.rotation.x + vertical)
     );
 
     targetRotationY = root.rotation.y;
     targetRotationX = root.rotation.x;
 
+    dragVelocityX = horizontal;
+    dragVelocityY = vertical;
+
     previousX = event.clientX;
     previousY = event.clientY;
+
+    event.preventDefault();
   });
 
-  function stopDragging() {
+  function stopDragging(event) {
+    if (
+      event &&
+      activePointerId !== null &&
+      event.pointerId !== activePointerId
+    ) {
+      return;
+    }
+
     dragging = false;
+    activePointerId = null;
+    canvas.style.cursor = 'grab';
+
+    // A little momentum after the finger is released.
+    targetRotationY = root.rotation.y + dragVelocityX * 5;
+
+    targetRotationX = Math.max(
+      -1.1,
+      Math.min(1.1, root.rotation.x + dragVelocityY * 3)
+    );
+
+    autoSpin = false;
   }
 
   canvas.addEventListener('pointerup', stopDragging);
@@ -573,6 +678,8 @@
   canvas.addEventListener('lostpointercapture', stopDragging);
 
   function animate(time) {
+    if (!pageVisible) return;
+
     animationFrame = requestAnimationFrame(animate);
 
     if (!lastFrameTime) lastFrameTime = time;
@@ -591,11 +698,11 @@
       );
 
       root.rotation.y += turnDifference *
-        Math.min(1, delta * 3.2);
+        Math.min(1, delta * 4.5);
 
       root.rotation.x +=
         (targetRotationX - root.rotation.x) *
-        Math.min(1, delta * 3.2);
+        Math.min(1, delta * 4.5);
 
       if (autoSpin) {
         root.rotation.y += delta * 0.035;
@@ -611,7 +718,10 @@
 
     pulses.forEach(function (pulse) {
       if (pulse.type === 'route') {
-        pulse.progress = (pulse.progress + delta * 0.17) % 1;
+        pulse.progress = (
+          pulse.progress + delta * 0.17
+        ) % 1;
+
         pulse.mesh.position.copy(
           pulse.curve.getPointAt(pulse.progress)
         );
@@ -628,16 +738,54 @@
     renderer.render(scene, camera);
   }
 
+  function startAnimation() {
+    if (!pageVisible || animationFrame) return;
+
+    lastFrameTime = 0;
+    animationFrame = requestAnimationFrame(animate);
+  }
+
+  function stopAnimation() {
+    if (animationFrame) {
+      cancelAnimationFrame(animationFrame);
+      animationFrame = 0;
+    }
+  }
+
+  document.addEventListener('visibilitychange', function () {
+    pageVisible = !document.hidden;
+
+    if (pageVisible) {
+      startAnimation();
+    } else {
+      stopAnimation();
+    }
+  });
+
   window.FailoverGlobe = {
     update: update,
     resize: resize
   };
 
-  animate(0);
+  startAnimation();
 
   window.addEventListener('pagehide', function () {
-    cancelAnimationFrame(animationFrame);
+    stopAnimation();
+
     window.removeEventListener('resize', resize);
+
+    if (resizeObserver) {
+      resizeObserver.disconnect();
+    }
+
+    disposeDynamicObjects();
+
+    earth.geometry.dispose();
+    earthMaterial.dispose();
+
+    atmosphere.geometry.dispose();
+    atmosphere.material.dispose();
+
     renderer.dispose();
   });
 })();
