@@ -4,102 +4,72 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Failover Radar</title>
-
-  <!-- Leaflet 1.9.4 — pinned, no SRI -->
-  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
-  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-
-  <link rel="stylesheet" href="/styles.css" />
+  <link rel="stylesheet" href="/styles.css?v=7" />
 </head>
 <body>
 
-  <!-- ═══════════════════════════════════════════════════════════════════
-       SIMULATION BANNER  (hidden by default)
-  ═══════════════════════════════════════════════════════════════════ -->
+  <!-- SIMULATION BANNER (hidden by default) -->
   <div id="sim-banner" class="sim-banner" hidden>
     <span>SIMULATION: Tokyo M6.8 — demo stress test active</span>
   </div>
 
-  <!-- ═══════════════════════════════════════════════════════════════════
-       HEADER
-  ═══════════════════════════════════════════════════════════════════ -->
+  <!-- HEADER -->
   <header class="app-header">
     <div class="header-title">
       <span class="radar-icon" aria-hidden="true">📡</span>
       <h1>Failover Radar</h1>
     </div>
     <div class="header-controls">
-      <button id="btn-mystack"  class="btn btn-stack"  type="button" aria-expanded="false" aria-controls="mystack-drawer">My Stack</button>
-      <button id="btn-simulate" class="btn btn-warn"   type="button">Simulate</button>
-      <button id="btn-clear"    class="btn btn-clear"  type="button" hidden>Clear</button>
+      <button id="btn-mystack" class="btn btn-stack" type="button" aria-expanded="false" aria-controls="mystack-drawer">My Stack</button>
+      <button id="btn-simulate" class="btn btn-warn" type="button">Simulate</button>
+      <button id="btn-clear" class="btn btn-clear" type="button" hidden>Clear</button>
     </div>
   </header>
 
-  <!-- ═══════════════════════════════════════════════════════════════════
-       UPDATE-FAILED NOTICE  (hidden by default)
-  ═══════════════════════════════════════════════════════════════════ -->
+  <!-- UPDATE-FAILED NOTICE (hidden by default) -->
   <div id="update-error" class="update-error" hidden>
     <span id="update-error-text">Update failed, showing last data.</span>
   </div>
 
-  <!-- ═══════════════════════════════════════════════════════════════════
-       MY STACK DRAWER  (desktop: sidebar panel; mobile: bottom sheet)
-  ═══════════════════════════════════════════════════════════════════ -->
+  <!-- MY STACK DRAWER -->
   <div id="mystack-drawer" class="mystack-drawer" aria-label="My Stack filter" hidden>
     <div class="mystack-drawer-inner">
-
       <div class="mystack-drawer-header">
         <span class="mystack-drawer-title">My Stack</span>
         <button id="btn-mystack-close" class="btn btn-ghost mystack-close-btn" type="button" aria-label="Close My Stack">✕</button>
       </div>
-
       <p class="mystack-hint">Pick the regions and providers you use. Saved in this browser only — never sent to the server.</p>
-
-      <!-- My Stack summary banner -->
       <div id="mystack-banner" class="mystack-banner" aria-live="polite"></div>
-
-      <!-- Nearby advice: one row per selected NEARBY region -->
       <div id="mystack-advice" class="mystack-advice" hidden aria-live="polite"></div>
-
       <div class="mystack-columns">
-
         <fieldset class="mystack-fieldset">
           <legend class="mystack-legend">Cloud regions</legend>
           <div id="mystack-region-list" class="mystack-checklist">
             <span class="mystack-loading">Loading regions…</span>
           </div>
         </fieldset>
-
         <fieldset class="mystack-fieldset">
           <legend class="mystack-legend">SaaS providers</legend>
           <div id="mystack-provider-list" class="mystack-checklist">
-            <!-- populated by app.js once provider list is known -->
             <span class="mystack-loading">Loading providers…</span>
           </div>
         </fieldset>
+      </div>
+    </div>
+  </div>
 
-      </div><!-- .mystack-columns -->
-
-    </div><!-- .mystack-drawer-inner -->
-  </div><!-- #mystack-drawer -->
-
-  <!-- Scrim — closes drawer on mobile tap-outside -->
   <div id="mystack-scrim" class="mystack-scrim" hidden aria-hidden="true"></div>
 
-  <!-- ═══════════════════════════════════════════════════════════════════
-       MAIN LAYOUT
-  ═══════════════════════════════════════════════════════════════════ -->
+  <!-- MAIN LAYOUT -->
   <main class="app-main">
-
-    <!-- Map pane -->
-    <section class="map-pane" aria-label="Seismic and region map">
+    <!-- 3D Three.js Globe Pane -->
+    <section class="map-pane" aria-label="3D seismic and region globe">
       <div id="map"></div>
+      <div id="sim-narration" class="sim-narration" aria-live="polite" hidden></div>
     </section>
 
     <!-- Sidebar: provider panels -->
     <aside class="sidebar">
-
-      <!-- USGS quake feed status -->
       <section class="panel" id="panel-usgs" aria-label="USGS feed status">
         <details open>
           <summary class="panel-summary">
@@ -108,15 +78,12 @@
             <span class="panel-details-toggle" aria-hidden="true">▶</span>
           </summary>
           <div class="panel-details-body">
-            <p class="panel-meta">
-              Last updated: <span id="usgs-last-updated">—</span>
-            </p>
+            <p class="panel-meta">Last updated: <span id="usgs-last-updated">—</span></p>
             <p class="panel-detail" id="usgs-count">—</p>
           </div>
         </details>
       </section>
 
-      <!-- GitHub status -->
       <section class="panel" id="panel-github" aria-label="GitHub status">
         <details open>
           <summary class="panel-summary">
@@ -125,17 +92,14 @@
             <span class="panel-details-toggle" aria-hidden="true">▶</span>
           </summary>
           <div class="panel-details-body">
-            <p class="panel-meta">
-              Last updated: <span id="github-last-updated">—</span>
-            </p>
+            <p class="panel-meta">Last updated: <span id="github-last-updated">—</span></p>
             <p class="panel-detail" id="github-description">—</p>
             <ul class="component-list" id="github-components"></ul>
-            <ul class="incident-list"  id="github-incidents"></ul>
+            <ul class="incident-list" id="github-incidents"></ul>
           </div>
         </details>
       </section>
 
-      <!-- Cloudflare status -->
       <section class="panel" id="panel-cloudflare" aria-label="Cloudflare status">
         <details open>
           <summary class="panel-summary">
@@ -144,36 +108,26 @@
             <span class="panel-details-toggle" aria-hidden="true">▶</span>
           </summary>
           <div class="panel-details-body">
-            <p class="panel-meta">
-              Last updated: <span id="cloudflare-last-updated">—</span>
-            </p>
+            <p class="panel-meta">Last updated: <span id="cloudflare-last-updated">—</span></p>
             <p class="panel-detail" id="cloudflare-description">—</p>
             <ul class="component-list" id="cloudflare-components"></ul>
-            <ul class="incident-list"  id="cloudflare-incidents"></ul>
+            <ul class="incident-list" id="cloudflare-incidents"></ul>
           </div>
         </details>
       </section>
 
-      <!-- Attribution -->
       <section class="panel panel-attribution" aria-label="Data attribution">
         <p class="attribution-text">
-          Seismic data:
-          <a href="https://earthquake.usgs.gov/earthquakes/feed/v1.0/summary/4.5_day.geojson"
-             target="_blank" rel="noopener noreferrer">USGS Earthquake Hazards Program</a>
+          Seismic data: <a href="https://usgs.gov" target="_blank" rel="noopener noreferrer">USGS Earthquake Hazards Program</a>
         </p>
         <p class="attribution-text">
-          Map tiles: ©
-          <a href="https://www.openstreetmap.org/copyright"
-             target="_blank" rel="noopener noreferrer">OpenStreetMap contributors</a>
+          3D WebGL Globe: Three.js / Globe.GL · Earth texture: Natural Earth
         </p>
       </section>
-
     </aside>
   </main>
 
-  <!-- ═══════════════════════════════════════════════════════════════════
-       CHECKLIST PANEL  (below the main layout)
-  ═══════════════════════════════════════════════════════════════════ -->
+  <!-- CHECKLIST PANEL -->
   <section id="checklist-panel" class="checklist-panel" aria-label="Operator checklist" hidden>
     <div class="checklist-panel-inner">
       <h2 class="checklist-panel-heading">Operator Checklist</h2>
@@ -182,9 +136,7 @@
     </div>
   </section>
 
-  <!-- ═══════════════════════════════════════════════════════════════════
-       INCIDENT BRIEF PANEL
-  ═══════════════════════════════════════════════════════════════════ -->
+  <!-- INCIDENT BRIEF PANEL -->
   <section id="brief-panel" class="brief-panel" aria-label="Incident brief">
     <div class="brief-panel-inner">
       <div class="brief-panel-header">
@@ -204,8 +156,10 @@
     </div>
   </section>
 
+  <script src="https://unpkg.com"></script>
   <script src="/stack.js"></script>
   <script src="/brief.js"></script>
-  <script src="/app.js"></script>
+  <script src="/app.js?v=7"></script>
+  <script src="/globe.js?v=7"></script>
 </body>
 </html>
