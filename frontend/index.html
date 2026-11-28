@@ -160,9 +160,27 @@
     </div>
   </section>
 
+  <section id="runbook-panel" class="brief-panel" aria-label="Stack runbook">
+    <div class="brief-panel-inner">
+      <div class="brief-panel-header">
+        <h2 class="brief-panel-heading">Stack Runbook</h2>
+        <button id="btn-copy-runbook" class="btn btn-copy-brief"
+          type="button" aria-label="Copy stack runbook">
+          Copy stack runbook
+        </button>
+        <span id="runbook-copy-msg" class="brief-copy-msg"
+          aria-live="polite" hidden></span>
+      </div>
+      <textarea id="runbook-textarea" class="brief-textarea" readonly
+        aria-label="Stack runbook text — select all and copy if button fails"
+        spellcheck="false"></textarea>
+    </div>
+  </section>
+
   <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
   <script src="/stack.js"></script>
   <script src="/brief.js"></script>
+  <script src="/runbook.js"></script>
   <script src="/globe.js?v=3"></script>
   <script src="/app.js?v=17"></script>
 </body>

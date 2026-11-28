@@ -64,3 +64,16 @@
   4. THE UI SHALL display a "Copy incident brief" button (at least 44 px tall) and a visible read-only `<textarea>` whose value is set via `.value` (never `innerHTML`).
   5. On button tap: the frontend SHALL attempt `navigator.clipboard.writeText` inside `try/catch`; on failure SHALL select the textarea (`select()` and `setSelectionRange(0, 99999)`) and attempt `document.execCommand("copy")`; if that also fails SHALL display "Tap and hold the text, then Copy." A short "Copied" or fallback message SHALL be shown after each attempt.
   6. The brief SHALL update automatically whenever data, stack selection, or simulation state changes. The brief and stack selection SHALL never be sent to the server.
+
+## Requirement 10: Pre-Incident Stack Runbook Exporter
+- **User Story:** As an operator, I want a one-click "Copy stack runbook" button that generates a plain-text, pre-incident summary of my selected regions and providers from already-fetched data, so I can review my stack's current posture before anything goes wrong.
+- **Acceptance Criteria:**
+  1. THE frontend SHALL provide a "Copy stack runbook" button (at least 44 px tall) using the same `navigator.clipboard.writeText` try/catch and `<textarea>` select/execCommand fallback as the incident brief. The runbook text SHALL be set via `.value`, never `innerHTML`. The runbook SHALL never be sent to the server.
+  2. WHEN the button is clicked, THE frontend SHALL build the runbook text purely from data already returned by `/api/radar` and the current stack selection, with no additional network requests.
+  3. THE runbook SHALL begin with "Failover Radar stack runbook (pre-incident)" on the first line, followed by "As of [generated_at_utc]".
+  4. FOR each selected region, THE runbook SHALL include: the region label and id, the nearest alternative region with the exact label "Nearest alternative by distance (health not verified)", and the line "Before shifting traffic, verify that region's health yourself."
+  5. FOR each selected provider, THE runbook SHALL include: the provider name, status page link, current indicator and description, and the fetched timestamp. All links SHALL use `https` only.
+  6. IF data for any feed is stale, THE runbook SHALL include a stale warning with `last_success`.
+  7. THE runbook SHALL end with the line "Seismic proximity and provider status are separate signals."
+  8. THE runbook SHALL use the word "nearby" and SHALL NOT use the words "affected", "impacted", "healthy", "unhealthy", "caused", or "outage confirmed".
+  9. IF nothing is selected, THE runbook SHALL include all regions and providers from the fetched data.

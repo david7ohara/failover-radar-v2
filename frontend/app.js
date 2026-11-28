@@ -66,6 +66,11 @@ const briefTextarea = document.getElementById('brief-textarea');
 const btnCopyBrief = document.getElementById('btn-copy-brief');
 const briefCopyMsg = document.getElementById('brief-copy-msg');
 
+// Stack Runbook
+const runbookTextarea = document.getElementById('runbook-textarea');
+const btnCopyRunbook = document.getElementById('btn-copy-runbook');
+const runbookCopyMsg = document.getElementById('runbook-copy-msg');
+
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
 function fmtUtc(isoStr) {
@@ -356,6 +361,7 @@ function applyMyStack(data) {
 
   updateGlobe(data);
   rebuildBrief();
+  rebuildRunbook();
   refreshChecklist(data);
 }
 
@@ -514,6 +520,7 @@ async function fetchRadar() {
 
     renderAll(data);
     rebuildBrief();
+    rebuildRunbook();
     applyMyStack(data);
   } catch (_) {
     updateError.hidden = false;
@@ -728,6 +735,7 @@ async function refreshChecklist(data) {
   }
 
   rebuildBrief();
+  rebuildRunbook();
 }
 
 // ─── Incident Brief ───────────────────────────────────────────────────────────
@@ -750,6 +758,19 @@ function rebuildBrief() {
   );
 
   briefTextarea.value = text;
+}
+
+function rebuildRunbook() {
+  if (!lastData || typeof RunbookBuilder === 'undefined') return;
+
+  const stackSelection = stackState
+    ? {
+        regions: Array.from(stackState.regions),
+        providers: Array.from(stackState.providers)
+      }
+    : null;
+
+  runbookTextarea.value = RunbookBuilder.buildRunbook(lastData, stackSelection);
 }
 
 function showCopyMsg(message, warning) {
@@ -790,6 +811,46 @@ btnCopyBrief.addEventListener('click', async function () {
   }
 
   showCopyMsg('Tap and hold the text, then Copy.', true);
+});
+
+function showRunbookCopyMsg(message, warning) {
+  runbookCopyMsg.textContent = message;
+  runbookCopyMsg.className =
+    'brief-copy-msg' + (warning ? ' brief-copy-msg--warn' : '');
+  runbookCopyMsg.hidden = false;
+
+  setTimeout(function () {
+    runbookCopyMsg.hidden = true;
+  }, 3000);
+}
+
+btnCopyRunbook.addEventListener('click', async function () {
+  const text = runbookTextarea.value;
+  if (!text) return;
+
+  try {
+    await navigator.clipboard.writeText(text);
+    showRunbookCopyMsg('Copied', false);
+    return;
+  } catch (_) {
+    // Continue to the Safari fallback.
+  }
+
+  runbookTextarea.select();
+  runbookTextarea.setSelectionRange(0, 99999);
+
+  try {
+    const copied = document.execCommand('copy');
+
+    if (copied) {
+      showRunbookCopyMsg('Copied', false);
+      return;
+    }
+  } catch (_) {
+    // Continue to the manual fallback.
+  }
+
+  showRunbookCopyMsg('Tap and hold the text, then Copy.', true);
 });
 
 // ─── Bootstrap ────────────────────────────────────────────────────────────────
