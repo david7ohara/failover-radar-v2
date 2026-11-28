@@ -2,7 +2,7 @@
 
 A small web app that shows real earthquakes and GitHub and Cloudflare status side by side on a dark map, filtered to the stack you choose. It turns what it sees into a template checklist and a copy-ready incident brief.
 
-**Live demo:** failover-radar-v2-production.up.railway.app (no login, no keys)
+**Live demo:** https://failover-radar-v2-production.up.railway.(no login, no keys)
 **Built for:** Kiroween 2026, Frankenstein category
 
 ## Why Frankenstein
