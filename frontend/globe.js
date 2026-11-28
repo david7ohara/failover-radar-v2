@@ -756,7 +756,7 @@
 
     idleTime += delta;
 
-    if (!dragging && idleTime > 3 && !lastFocusKey) {
+    if (!dragging && idleTime > 0 && !lastFocusKey) {
       const idleRotation = new THREE.Quaternion().setFromAxisAngle(
         new THREE.Vector3(0, 1, 0),
         delta * 0.055
